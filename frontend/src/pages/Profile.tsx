@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { matchService } from '../services/matchService';
-import { Match } from '../types';
+import type { Match } from '../types';
 
 const Profile = () => {
   const { user } = useAuthStore();

@@ -1,5 +1,5 @@
 import api from './api';
-import { Match } from '../types';
+import type { Match } from '../types';
 
 export const matchService = {
   createMatch: async (data: {
