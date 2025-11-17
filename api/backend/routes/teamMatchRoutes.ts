@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import TeamMatch from '../models/TeamMatch.js';
 
 const router = express.Router();
@@ -6,6 +7,11 @@ const router = express.Router();
 // 獲取所有隊伍對戰（公開）
 router.get('/', async (req, res) => {
   try {
+    // 檢查 MongoDB 連接狀態
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
+    }
+
     const { category, region, dayOfWeek, search } = req.query;
     const query: any = {};
 

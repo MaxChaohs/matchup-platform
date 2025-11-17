@@ -17,13 +17,28 @@ app.use(express.json());
 // MongoDB 連接
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/match-point';
 
-mongoose.connect(MONGODB_URI)
-  .then(() => {
+// 檢查 MongoDB 連接狀態
+const connectDB = async () => {
+  try {
+    await mongoose.connect(MONGODB_URI);
     console.log('✅ MongoDB 連接成功');
-  })
-  .catch((error) => {
+  } catch (error) {
     console.error('❌ MongoDB 連接失敗:', error);
-  });
+    // 在 Vercel serverless 環境中，不要阻止應用啟動
+    // 讓路由處理器處理數據庫錯誤
+  }
+};
+
+connectDB();
+
+// 監聽連接事件
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB 連接錯誤:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB 連接已斷開');
+});
 
 // Routes
 app.use('/api/users', userRoutes);

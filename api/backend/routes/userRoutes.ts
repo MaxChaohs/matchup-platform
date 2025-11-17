@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 
 const router = express.Router();
@@ -51,7 +52,17 @@ router.post('/', async (req, res) => {
 // 更新用戶資訊
 router.put('/:id', async (req, res) => {
   try {
+    // 檢查 MongoDB 連接狀態
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
+    }
+
     const { username, email, phone, avatar } = req.body;
+    
+    // 驗證 ID 格式（MongoDB ObjectId）
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: '無效的用戶 ID 格式' });
+    }
     
     // 檢查用戶是否存在
     const user = await User.findById(req.params.id);
