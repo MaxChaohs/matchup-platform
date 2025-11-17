@@ -11,8 +11,8 @@ interface AuthState {
 
 // 測試帳號
 const TEST_ACCOUNTS = [
-  { username: 'test', password: 'test123', user: { id: '1', username: 'test', email: 'test@example.com', phone: '0912345678' } },
-  { username: 'admin', password: 'admin123', user: { id: '2', username: 'admin', email: 'admin@example.com', phone: '0987654321' } },
+  { username: 'test', password: 'test123', user: { _id: '1', id: '1', username: 'test', email: 'test@example.com', phone: '0912345678' } },
+  { username: 'admin', password: 'admin123', user: { _id: '2', id: '2', username: 'admin', email: 'admin@example.com', phone: '0987654321' } },
 ];
 
 // 從 localStorage 讀取保存的用戶信息

@@ -117,6 +117,10 @@ export default function Home() {
     
     try {
       const matchId = match._id || match.id;
+      if (!matchId) {
+        alert('無法獲取對戰 ID');
+        return;
+      }
       await api.deleteTeamMatch(matchId);
       teamMatchStore.fetchTeamMatches();
     } catch (error: any) {
@@ -130,6 +134,10 @@ export default function Home() {
     
     try {
       const recruitmentId = recruitment._id || recruitment.id;
+      if (!recruitmentId) {
+        alert('無法獲取招募 ID');
+        return;
+      }
       await api.deletePlayerRecruitment(recruitmentId);
       playerRecruitmentStore.fetchRecruitments();
     } catch (error: any) {
