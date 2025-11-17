@@ -12,14 +12,20 @@ export default function Login() {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (login(username, password)) {
-      navigate('/');
-    } else {
-      setError('使用者名稱或密碼錯誤');
+    try {
+      const success = await login(username, password);
+      if (success) {
+        navigate('/');
+      } else {
+        setError('使用者名稱或密碼錯誤');
+      }
+    } catch (error: any) {
+      setError('登入失敗，請稍後再試');
+      console.error('Login error:', error);
     }
   };
 

@@ -27,9 +27,14 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 創建用戶
+// 創建用戶（如果不存在則創建，存在則返回）
 router.post('/', async (req, res) => {
   try {
+    // 檢查 MongoDB 連接狀態
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
+    }
+
     const { username, email, phone, avatar } = req.body;
     
     // 檢查是否已存在
@@ -38,7 +43,7 @@ router.post('/', async (req, res) => {
     });
     
     if (existingUser) {
-      return res.status(400).json({ error: '用戶名或電子郵件已存在' });
+      return res.status(200).json(existingUser); // 返回現有用戶
     }
 
     const user = new User({ username, email, phone, avatar });

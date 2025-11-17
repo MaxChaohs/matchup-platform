@@ -4,7 +4,7 @@ import { User } from '../types';
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -47,15 +47,31 @@ const storedUser = loadUserFromStorage();
 export const useAuthStore = create<AuthState>((set) => ({
   user: storedUser,
   isAuthenticated: !!storedUser,
-  login: (username: string, password: string) => {
+  login: async (username: string, password: string) => {
     const account = TEST_ACCOUNTS.find(
       acc => acc.username === username && acc.password === password
     );
     
     if (account) {
-      saveUserToStorage(account.user);
-      set({ user: account.user, isAuthenticated: true });
-      return true;
+      try {
+        // 嘗試在數據庫中創建或獲取用戶
+        const { api } = await import('../services/api');
+        const dbUser = await api.createUser({
+          username: account.user.username,
+          email: account.user.email,
+          phone: account.user.phone,
+        });
+        // 使用數據庫返回的用戶（包含真實的 _id）
+        saveUserToStorage(dbUser);
+        set({ user: dbUser, isAuthenticated: true });
+        return true;
+      } catch (error) {
+        // 如果 API 調用失敗，使用本地測試帳號
+        console.warn('無法連接到數據庫，使用本地測試帳號:', error);
+        saveUserToStorage(account.user);
+        set({ user: account.user, isAuthenticated: true });
+        return true;
+      }
     }
     return false;
   },
