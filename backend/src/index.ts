@@ -9,7 +9,6 @@ import playerRecruitmentRoutes from './routes/playerRecruitmentRoutes.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -36,9 +35,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Match Point API is running' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-});
+// 本地開發時啟動伺服器
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+  });
+}
 
+// 導出給 Vercel serverless function
 export default app;
 
