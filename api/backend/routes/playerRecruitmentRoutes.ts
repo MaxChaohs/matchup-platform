@@ -59,6 +59,11 @@ router.get('/:id', async (req, res) => {
 // 創建隊員招募
 router.post('/', async (req, res) => {
   try {
+    // 檢查 MongoDB 連接狀態
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
+    }
+
     const {
       title,
       category,
@@ -75,6 +80,14 @@ router.post('/', async (req, res) => {
 
     if (!title || !category || !region || !dayOfWeek || !time || !location || !creatorId || !creatorName || !neededPlayers) {
       return res.status(400).json({ error: '缺少必要欄位' });
+    }
+
+    // 驗證 creatorId 是否為有效的 ObjectId
+    if (!mongoose.Types.ObjectId.isValid(creatorId)) {
+      return res.status(400).json({ 
+        error: '無效的用戶 ID。請重新登入以獲取有效的用戶 ID。',
+        code: 'INVALID_USER_ID'
+      });
     }
 
     const recruitment = new PlayerRecruitment({

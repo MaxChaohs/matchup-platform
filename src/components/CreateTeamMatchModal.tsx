@@ -34,6 +34,14 @@ export default function CreateTeamMatchModal({ user, onClose, onSuccess }: Creat
 
     try {
       const userId = user._id || user.id;
+      
+      // 檢查用戶 ID 是否為有效的 MongoDB ObjectId
+      if (!userId || userId === '1' || userId === '2') {
+        setError('請重新登入以獲取有效的用戶 ID');
+        setLoading(false);
+        return;
+      }
+
       await api.createTeamMatch({
         ...formData,
         creatorId: userId,
@@ -43,7 +51,12 @@ export default function CreateTeamMatchModal({ user, onClose, onSuccess }: Creat
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || '建立失敗');
+      // 檢查是否為無效用戶 ID 錯誤
+      if (err.message && err.message.includes('無效的用戶 ID')) {
+        setError('請重新登入以獲取有效的用戶 ID');
+      } else {
+        setError(err.message || '建立失敗');
+      }
     } finally {
       setLoading(false);
     }
