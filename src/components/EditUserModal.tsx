@@ -26,6 +26,9 @@ export default function EditUserModal({ user, onClose, onSuccess }: EditUserModa
 
     try {
       const userId = user._id || user.id;
+      if (!userId) {
+        throw new Error('無法獲取用戶 ID');
+      }
       const updatedUser = await api.updateUser(userId, formData);
       // 更新 authStore 中的用戶資訊
       updateUser(updatedUser);

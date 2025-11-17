@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TeamMatch, MatchCategory, Region, DayOfWeek } from '../types';
 import { api } from '../services/api';
 
@@ -34,6 +34,9 @@ export default function EditTeamMatchModal({ match, onClose, onSuccess }: EditTe
 
     try {
       const matchId = match._id || match.id;
+      if (!matchId) {
+        throw new Error('無法獲取對戰 ID');
+      }
       await api.updateTeamMatch(matchId, formData);
       onSuccess();
       onClose();

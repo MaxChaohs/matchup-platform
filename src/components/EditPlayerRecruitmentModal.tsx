@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PlayerRecruitment, MatchCategory, Region, DayOfWeek } from '../types';
 import { api } from '../services/api';
 
@@ -35,6 +35,9 @@ export default function EditPlayerRecruitmentModal({ recruitment, onClose, onSuc
 
     try {
       const recruitmentId = recruitment._id || recruitment.id;
+      if (!recruitmentId) {
+        throw new Error('無法獲取招募 ID');
+      }
       await api.updatePlayerRecruitment(recruitmentId, formData);
       onSuccess();
       onClose();
