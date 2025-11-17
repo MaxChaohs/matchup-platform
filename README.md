@@ -1,164 +1,142 @@
-# MATCH POINT 平台
+# MATCH POINT - 約戰平台
 
-運動與電子競技約戰平台
+一個用於各種運動和遊戲的約戰平台。
+
+## 功能特色
+
+- **找隊伍**：以完整隊伍為單位建立、參加一對一對戰
+- **找隊員**：提供使用者尋找隊員功能
+- 所有貼文公開給所有使用者查看
+- 完整的 CRUD 功能（建立、編輯、刪除）
 
 ## 技術棧
 
 ### 前端
-- React + TypeScript
+- React 18
+- TypeScript
 - Vite
 - Tailwind CSS
-- React Router
 - Zustand (狀態管理)
-- Axios (HTTP 客戶端)
-- React Hook Form (表單處理)
+- React Router
 
 ### 後端
 - Node.js + Express
 - TypeScript
 - MongoDB + Mongoose
-- JWT (認證)
-- bcryptjs (密碼加密)
+- RESTful API
 
-## 專案結構
-
-```
-match-point/
-├── frontend/          # 前端專案
-│   ├── src/
-│   │   ├── pages/     # 頁面元件
-│   │   ├── services/  # API 服務
-│   │   ├── store/     # 狀態管理
-│   │   ├── types/     # TypeScript 類型
-│   │   └── App.tsx
-│   └── package.json
-│
-└── backend/           # 後端專案
-    ├── src/
-    │   ├── routes/     # 路由
-    │   ├── controllers/# 控制器
-    │   ├── models/     # 資料模型
-    │   ├── middleware/ # 中間件
-    │   ├── config/     # 設定檔
-    │   └── app.ts
-    └── package.json
-```
+### 部署
+- Vercel (前端 + 後端)
+- MongoDB Atlas
 
 ## 安裝與運行
 
-### 前置需求
-- Node.js (v18 或以上)
-- MongoDB (本地或遠端)
+### 本地開發
 
-### 後端設置
+1. 安裝前端依賴：
+```bash
+npm install
+```
 
-1. 進入後端目錄：
+2. 安裝後端依賴：
 ```bash
 cd backend
-```
-
-2. 安裝依賴：
-```bash
 npm install
 ```
 
-3. 創建 `.env` 檔案：
-   
-   在 `backend` 目錄下創建 `.env` 檔案，內容如下：
-   
-   **本地 MongoDB：**
-   ```env
-   PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/match-point
-   JWT_SECRET=your-secret-key-change-in-production
-   JWT_EXPIRE=7d
-   ```
-   
-   **MongoDB Atlas（雲端）：**
-   ```env
-   PORT=5000
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/match-point?retryWrites=true&w=majority
-   JWT_SECRET=your-secret-key-change-in-production
-   JWT_EXPIRE=7d
-   ```
-   
-   ⚠️ **重要**：請將 `username` 和 `password` 替換為您的實際 MongoDB 憑證
+3. 設定環境變數：
 
-4. 啟動 MongoDB（如果使用本地 MongoDB）
+在 `backend/` 目錄建立 `.env`：
+```
+PORT=3000
+MONGODB_URI=你的MongoDB連接字串
+```
 
-5. 運行後端：
+在專案根目錄建立 `.env`：
+```
+VITE_API_URL=http://localhost:3000/api
+```
+
+4. 啟動後端：
+```bash
+cd backend
+npm run dev
+```
+
+5. 啟動前端（新終端）：
 ```bash
 npm run dev
 ```
 
-後端將運行在 `http://localhost:5000`
+## 測試帳號
 
-### 前端設置
+- 帳號: `test` / 密碼: `test123`
+- 帳號: `admin` / 密碼: `admin123`
 
-1. 進入前端目錄：
-```bash
-cd frontend
-```
+## 功能說明
 
-2. 安裝依賴：
-```bash
-npm install
-```
+### 登入頁面
+- 支援使用者名稱/電話/電子郵件登入
+- 密碼顯示/隱藏切換
+- 記住我功能
+- Google 登入按鈕（尚未實裝）
 
-3. 創建 `.env` 檔案（可選）：
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
-```
+### 主頁面
 
-4. 運行前端：
-```bash
-npm run dev
-```
+#### 找隊伍模式
+- 瀏覽所有公開的隊伍對戰（一對一）
+- 建立、編輯、刪除自己的隊伍對戰
+- 查看隊伍資訊（隊伍數、每隊人數）
 
-前端將運行在 `http://localhost:5173`
+#### 找隊員模式
+- 瀏覽所有公開的隊員招募
+- 建立、編輯、刪除自己的隊員招募
+- 查看隊員資訊（目前人數、需要人數）
+
+#### 個人資訊
+- 顯示使用者資訊
+- 編輯個人資訊
+- 刪除帳號
+
+#### 篩選與搜尋
+- 對戰類別（籃球、足球、羽球、桌球、網球、排球、其他）
+- 地區（北部、中部、南部）
+- 時間（週一到週日）
+- 關鍵字搜尋
 
 ## API 端點
 
-### 認證
-- `POST /api/auth/register` - 註冊
-- `POST /api/auth/login` - 登入
-- `GET /api/auth/profile` - 取得個人資料（需要認證）
+### 用戶
+- `GET /api/users` - 獲取所有用戶
+- `GET /api/users/:id` - 獲取單個用戶
+- `POST /api/users` - 創建用戶
+- `PUT /api/users/:id` - 更新用戶
+- `DELETE /api/users/:id` - 刪除用戶
 
-### 比賽
-- `POST /api/matches` - 創建比賽（需要認證）
-- `GET /api/matches` - 取得比賽列表
-- `GET /api/matches/:id` - 取得比賽詳情
-- `GET /api/matches/user/matches` - 取得使用者的比賽（需要認證）
+### 隊伍對戰
+- `GET /api/team-matches` - 獲取所有對戰（支援篩選和搜尋）
+- `GET /api/team-matches/:id` - 獲取單個對戰
+- `POST /api/team-matches` - 創建對戰
+- `PUT /api/team-matches/:id` - 更新對戰
+- `DELETE /api/team-matches/:id` - 刪除對戰
 
-## 功能
+### 隊員招募
+- `GET /api/player-recruitments` - 獲取所有招募（支援篩選和搜尋）
+- `GET /api/player-recruitments/:id` - 獲取單個招募
+- `POST /api/player-recruitments` - 創建招募
+- `PUT /api/player-recruitments/:id` - 更新招募
+- `DELETE /api/player-recruitments/:id` - 刪除招募
 
-- ✅ 使用者註冊與登入
-- ✅ JWT 認證
-- ✅ 創建比賽
-- ✅ 瀏覽比賽列表
-- ✅ 個人中心
-- ✅ 查看創建與參與的比賽
-- 🔄 社交登入（Apple、Google、Facebook）- 待實作
-- 🔄 忘記密碼功能 - 待實作
+## 部署到 Vercel
 
-## 開發說明
+詳見 [DEPLOY.md](./DEPLOY.md)
 
-### 後端開發
-- 使用 TypeScript
-- 使用 Mongoose 進行資料庫操作
-- JWT 用於認證
-- 使用 Express 中間件處理請求
+## 開發狀態
 
-### 前端開發
-- 使用 React Hooks
-- Zustand 進行狀態管理
-- React Router 處理路由
-- Tailwind CSS 進行樣式設計
-
-## 注意事項
-
-1. 確保 MongoDB 正在運行
-2. 後端和前端需要同時運行
-3. 預設後端運行在 5000 端口，前端在 5173 端口
-4. 生產環境請更改 JWT_SECRET
+- ✅ 前端 UI 完成
+- ✅ 後端 API 完成
+- ✅ MongoDB 整合完成
+- ✅ CRUD 功能完成
+- ⏳ Google OAuth（尚未實裝）
+- ⏳ 前端 CRUD UI 整合（參考 UPDATE_HOME.md）
 

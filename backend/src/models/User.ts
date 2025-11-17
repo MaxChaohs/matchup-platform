@@ -1,23 +1,15 @@
-import mongoose, { Document, Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUser extends Document {
   username: string;
   email: string;
   phone?: string;
-  passwordHash: string;
   avatar?: string;
-  socialLogins?: {
-    apple?: string;
-    google?: string;
-    facebook?: string;
-  };
   createdAt: Date;
   updatedAt: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const userSchema = new Schema<IUser>(
+const UserSchema = new Schema<IUser>(
   {
     username: {
       type: String,
@@ -29,26 +21,15 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
       unique: true,
-      lowercase: true,
       trim: true,
+      lowercase: true,
     },
     phone: {
       type: String,
       trim: true,
     },
-    passwordHash: {
-      type: String,
-      required: function(this: IUser) {
-        return !this.socialLogins?.apple && !this.socialLogins?.google && !this.socialLogins?.facebook;
-      },
-    },
     avatar: {
       type: String,
-    },
-    socialLogins: {
-      apple: String,
-      google: String,
-      facebook: String,
     },
   },
   {
@@ -56,10 +37,5 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// 密碼比較方法
-userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.passwordHash);
-};
-
-export default mongoose.model<IUser>('User', userSchema);
+export default mongoose.model<IUser>('User', UserSchema);
 
