@@ -47,7 +47,23 @@ app.use('/api/player-recruitments', playerRecruitmentRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Match Point API is running' });
+  const dbStatus = mongoose.connection.readyState;
+  const dbStatusText = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  }[dbStatus] || 'unknown';
+  
+  res.json({ 
+    status: 'ok', 
+    message: 'Match Point API is running',
+    database: {
+      status: dbStatusText,
+      connected: dbStatus === 1,
+      uri: process.env.MONGODB_URI ? 'configured' : 'not configured'
+    }
+  });
 });
 
 // 本地開發時啟動伺服器
