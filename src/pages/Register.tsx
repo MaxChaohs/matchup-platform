@@ -234,7 +234,9 @@ export default function Register() {
           {/* Google Register Button */}
           <button
             onClick={() => {
-              window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/google`;
+              const apiUrl = import.meta.env.VITE_API_URL || 
+                (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
+              window.location.href = `${apiUrl}/auth/google`;
             }}
             className="w-full py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3 shadow-md border border-gray-200"
           >

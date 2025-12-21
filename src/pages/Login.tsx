@@ -55,7 +55,10 @@ export default function Login() {
   };
 
   const handleGoogleLogin = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    // 在生產環境中，如果前後端在同一域名，使用相對路徑
+    // 否則使用環境變數或默認值
+    const apiUrl = import.meta.env.VITE_API_URL || 
+      (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
     window.location.href = `${apiUrl}/auth/google`;
   };
 
