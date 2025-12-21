@@ -8,7 +8,10 @@ import crypto from 'crypto';
 const router = express.Router();
 
 // 配置 Google OAuth Strategy
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+// 檢查環境變數是否設置
+const hasGoogleConfig = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+
+if (hasGoogleConfig) {
   // 構建回調 URL
   // 優先使用環境變數，否則根據環境推斷
   let callbackURL = process.env.GOOGLE_CALLBACK_URL;
@@ -207,47 +210,85 @@ router.post('/login', async (req, res) => {
 
 // Google OAuth 登入
 router.get('/google', (req, res, next) => {
-  // 在 Vercel 環境中，動態構建回調 URL
-  if (!process.env.GOOGLE_CALLBACK_URL && process.env.VERCEL) {
-    const protocol = req.protocol || 'https';
-    const host = req.get('host') || process.env.VERCEL_URL || 'localhost:3000';
-    const callbackURL = `${protocol}://${host}/api/auth/google/callback`;
+  try {
+    // 檢查 Google OAuth 是否已配置
+    if (!hasGoogleConfig) {
+      console.error('Google OAuth not configured');
+      return res.status(500).json({ 
+        error: 'Google OAuth 未配置',
+        message: '請在環境變數中設置 GOOGLE_CLIENT_ID 和 GOOGLE_CLIENT_SECRET'
+      });
+    }
     
-    // 更新策略的回調 URL（如果需要的話）
-    // 注意：Passport 策略的回調 URL 通常在初始化時設置，但我們可以在這裡驗證
-    console.log('Google OAuth callback URL:', callbackURL);
+    // 在 Vercel 環境中，動態構建回調 URL
+    if (!process.env.GOOGLE_CALLBACK_URL && process.env.VERCEL) {
+      const protocol = req.protocol || 'https';
+      const host = req.get('host') || process.env.VERCEL_URL || 'localhost:3000';
+      const callbackURL = `${protocol}://${host}/api/auth/google/callback`;
+      
+      console.log('Google OAuth callback URL:', callbackURL);
+    }
+    
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+    })(req, res, next);
+  } catch (error: any) {
+    console.error('Google OAuth error:', error);
+    res.status(500).json({ error: 'Google OAuth 初始化失敗', message: error.message });
   }
-  
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-  })(req, res, next);
 });
 
 // Google OAuth 回調
 router.get(
   '/google/callback',
-  passport.authenticate('google', { session: false }),
+  (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
+      if (err) {
+        console.error('Google OAuth callback error:', err);
+        const frontendUrl = process.env.FRONTEND_URL || 
+          (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+        return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+      }
+      
+      if (!user) {
+        console.error('Google OAuth: No user returned');
+        const frontendUrl = process.env.FRONTEND_URL || 
+          (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+        return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+      }
+      
+      // 將用戶附加到 request
+      (req as AuthRequest).user = user;
+      next();
+    })(req, res, next);
+  },
   (req: AuthRequest, res) => {
-    if (!req.user) {
-      // 獲取前端 URL，優先使用環境變數，否則嘗試從請求中推斷
+    try {
+      if (!req.user) {
+        const frontendUrl = process.env.FRONTEND_URL || 
+          (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+        return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+      }
+
+      // 生成 token
+      const token = generateToken(req.user._id.toString());
+
+      // 重定向到前端並帶上 token
+      // 在生產環境中，如果前後端在同一域名，使用相對路徑
       const frontendUrl = process.env.FRONTEND_URL || 
         (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
-      return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
-    }
-
-    // 生成 token
-    const token = generateToken(req.user._id.toString());
-
-    // 重定向到前端並帶上 token
-    // 在生產環境中，如果前後端在同一域名，使用相對路徑
-    const frontendUrl = process.env.FRONTEND_URL || 
-      (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
-    
-    // 如果前後端在同一域名（Vercel 部署），使用相對路徑
-    if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
-      res.redirect(`/auth/callback?token=${token}`);
-    } else {
-      res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+      
+      // 如果前後端在同一域名（Vercel 部署），使用相對路徑
+      if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
+        res.redirect(`/auth/callback?token=${token}`);
+      } else {
+        res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+      }
+    } catch (error: any) {
+      console.error('Google OAuth callback processing error:', error);
+      const frontendUrl = process.env.FRONTEND_URL || 
+        (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+      res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
     }
   }
 );

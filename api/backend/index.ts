@@ -58,11 +58,18 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Session 配置（用於 Passport）
+// 注意：在 Vercel serverless 環境中，session 可能不會持久化
+// 但 Passport 仍然需要它來初始化
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'your-session-secret',
     resave: false,
     saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 小時
+    },
   })
 );
 
@@ -141,6 +148,20 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/team-matches', teamMatchRoutes);
 app.use('/api/player-recruitments', playerRecruitmentRoutes);
+
+// 全局錯誤處理中間件
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || '內部伺服器錯誤',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+});
+
+// 404 處理
+app.use((req: express.Request, res: express.Response) => {
+  res.status(404).json({ error: '路由不存在' });
+});
 
 // Health check
 app.get('/api/health', async (req, res) => {
