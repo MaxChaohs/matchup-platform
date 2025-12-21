@@ -56,17 +56,37 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '請求失敗' }));
-    throw new Error(error.error || '請求失敗');
+    if (!response.ok) {
+      let errorMessage = '請求失敗';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+      } catch {
+        // 如果無法解析 JSON，使用狀態碼
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    // 處理網絡錯誤
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('無法連接到伺服器，請檢查網絡連接');
+    }
+    // 如果是我們自己拋出的錯誤，直接重新拋出
+    if (error.message) {
+      throw error;
+    }
+    // 其他未知錯誤
+    throw new Error(error.message || '請求失敗，請稍後再試');
   }
-
-  return response.json();
 }
 
 export const api = {

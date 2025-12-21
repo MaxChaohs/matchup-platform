@@ -80,9 +80,20 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: '請填寫所有必填欄位' });
     }
 
+    // 驗證 email 格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: '請輸入有效的電子郵件地址' });
+    }
+
+    // 驗證密碼長度
+    if (password.length < 6) {
+      return res.status(400).json({ error: '密碼長度至少需要 6 個字元' });
+    }
+
     // 檢查用戶是否已存在
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [{ email: email.toLowerCase() }, { username }],
     });
 
     if (existingUser) {
@@ -92,7 +103,7 @@ router.post('/register', async (req, res) => {
     // 創建新用戶
     const user = new User({
       username,
-      email,
+      email: email.toLowerCase(),
       phone,
       password,
     });
@@ -111,10 +122,15 @@ router.post('/register', async (req, res) => {
       user: userResponse,
     });
   } catch (error: any) {
+    console.error('Register error:', error);
     if (error.code === 11000) {
-      res.status(400).json({ error: '用戶名或電子郵件已存在' });
+      // MongoDB duplicate key error
+      const field = Object.keys(error.keyPattern || {})[0];
+      res.status(400).json({ error: `${field === 'email' ? '電子郵件' : '用戶名'}已存在` });
+    } else if (error.name === 'ValidationError') {
+      res.status(400).json({ error: Object.values(error.errors).map((e: any) => e.message).join(', ') });
     } else {
-      res.status(400).json({ error: error.message });
+      res.status(500).json({ error: error.message || '註冊失敗，請稍後再試' });
     }
   }
 });
