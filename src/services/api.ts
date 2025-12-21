@@ -46,9 +46,9 @@ const clearToken = () => {
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const token = getToken();
   
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options?.headers,
+    ...(options?.headers as Record<string, string> || {}),
   };
 
   // 如果有 token，添加到 header

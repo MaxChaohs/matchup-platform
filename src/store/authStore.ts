@@ -46,7 +46,7 @@ const saveUserToStorage = (user: User | null, token?: string) => {
 
 const storedUser = loadUserFromStorage();
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: storedUser,
   isAuthenticated: !!storedUser,
   isLoading: false,
