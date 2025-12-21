@@ -3,90 +3,35 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 export default function Login() {
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   
   const login = useAuthStore((state) => state.login);
-  const register = useAuthStore((state) => state.register);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (isRegisterMode) {
-      // 註冊模式
-      if (!username || !email || !password) {
-        setError('請填寫所有必填欄位');
-        return;
-      }
-
-      if (password.length < 6) {
-        setError('密碼長度至少需要6個字元');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        setError('密碼與確認密碼不一致');
-        return;
-      }
-
-      // 驗證email格式
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setError('電子郵件格式不正確');
-        return;
-      }
-
-      try {
-        await register(username, email, password, phone || undefined);
+    
+    try {
+      const success = await login(username, password);
+      if (success) {
         navigate('/');
-      } catch (error: any) {
-        setError(error.message || '註冊失敗，請稍後再試');
-        console.error('Register error:', error);
+      } else {
+        setError('使用者名稱或密碼錯誤');
       }
-    } else {
-      // 登入模式
-      if (!username || !password) {
-        setError('請填寫使用者名稱/電子郵件和密碼');
-        return;
-      }
-
-      try {
-        const success = await login(username, password);
-        if (success) {
-          navigate('/');
-        } else {
-          setError('使用者名稱或密碼錯誤');
-        }
-      } catch (error: any) {
-        setError('登入失敗，請稍後再試');
-        console.error('Login error:', error);
-      }
+    } catch (error: any) {
+      setError('登入失敗，請稍後再試');
+      console.error('Login error:', error);
     }
   };
 
   const handleSocialLogin = (provider: string) => {
     // OAuth provider 先不實裝
     alert(`${provider} 登入功能尚未實裝`);
-  };
-
-  const switchMode = () => {
-    setIsRegisterMode(!isRegisterMode);
-    setError('');
-    setUsername('');
-    setEmail('');
-    setPhone('');
-    setPassword('');
-    setConfirmPassword('');
   };
 
   return (
@@ -106,37 +51,11 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right Column - Login/Register Form */}
+      {/* Right Column - Login Form */}
       <div className="w-full lg:w-2/5 bg-gray-800 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          {/* Mode Toggle */}
-          <div className="mb-6 flex gap-4">
-            <button
-              type="button"
-              onClick={() => !isRegisterMode || switchMode()}
-              className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${
-                !isRegisterMode
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              登入
-            </button>
-            <button
-              type="button"
-              onClick={() => isRegisterMode || switchMode()}
-              className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${
-                isRegisterMode
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              註冊
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username Input */}
+            {/* Username/Email/Phone Input */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,48 +66,11 @@ export default function Login() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder={isRegisterMode ? "Username" : "Username or Email"}
+                placeholder="Username, Phone, or Email"
                 className="w-full pl-10 pr-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
               />
             </div>
-
-            {/* Email Input (only in register mode) */}
-            {isRegisterMode && (
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-            )}
-
-            {/* Phone Input (only in register mode, optional) */}
-            {isRegisterMode && (
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </div>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone (Optional)"
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-            )}
 
             {/* Password Input */}
             <div className="relative">
@@ -220,67 +102,33 @@ export default function Login() {
               </button>
             </div>
 
-            {/* Confirm Password Input (only in register mode) */}
-            {isRegisterMode && (
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm Password"
-                  className="w-full pl-10 pr-12 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  <svg className="w-5 h-5 text-gray-400 hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {showConfirmPassword ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    )}
-                  </svg>
-                </button>
-              </div>
-            )}
-
             {/* Error Message */}
             {error && (
               <div className="text-red-400 text-sm">{error}</div>
             )}
 
-            {/* Remember Me & Forgot Password (only in login mode) */}
-            {!isRegisterMode && (
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-green-600 bg-gray-700 border-gray-600 rounded focus:ring-green-500"
-                  />
-                  <span className="ml-2 text-gray-300">Remember me</span>
-                </label>
-                <a href="#" className="text-green-400 hover:text-green-300 text-sm">
-                  Forgot Password?
-                </a>
-              </div>
-            )}
+            {/* Remember Me & Forgot Password */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-green-600 bg-gray-700 border-gray-600 rounded focus:ring-green-500"
+                />
+                <span className="ml-2 text-gray-300">Remember me</span>
+              </label>
+              <a href="#" className="text-green-400 hover:text-green-300 text-sm">
+                Forgot Password?
+              </a>
+            </div>
 
-            {/* Submit Button */}
+            {/* Log In Button */}
             <button
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-green-700 transition-colors"
             >
-              {isRegisterMode ? '註冊' : '登入'}
+              Log In
             </button>
           </form>
 
@@ -307,8 +155,16 @@ export default function Login() {
             </svg>
             <span className="font-medium">Log in with Google</span>
           </button>
+
+          {/* Test Account Info */}
+          <div className="mt-6 p-4 bg-gray-700 rounded-lg text-sm text-gray-400">
+            <p className="font-semibold mb-2">測試帳號：</p>
+            <p>帳號: test / 密碼: test123</p>
+            <p>帳號: admin / 密碼: admin123</p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

@@ -3,77 +3,24 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
-// 從localStorage讀取JWT token
-const getToken = (): string | null => {
-  try {
-    const stored = localStorage.getItem('auth-storage');
-    if (stored) {
-      const data = JSON.parse(stored);
-      return data.token || null;
-    }
-  } catch (e) {
-    // 忽略錯誤
-  }
-  return null;
-};
-
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const token = getToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options?.headers as Record<string, string> || {}),
-  };
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
 
-  // 如果有token，添加到headers
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: '請求失敗' }));
+    throw new Error(error.error || '請求失敗');
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-
-    // 嘗試解析響應
-    let responseData;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      responseData = await response.json().catch(() => null);
-    } else {
-      const text = await response.text();
-      responseData = text ? { error: text } : { error: '請求失敗' };
-    }
-
-    if (!response.ok) {
-      // 從響應中提取錯誤訊息
-      const errorMessage = responseData?.error || responseData?.message || `請求失敗 (${response.status})`;
-      throw new Error(errorMessage);
-    }
-
-    return responseData as T;
-  } catch (error: any) {
-    // 如果是網絡錯誤或其他錯誤，包裝並重新拋出
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error(error?.message || '網路錯誤，請檢查連線');
-  }
+  return response.json();
 }
 
 export const api = {
-  // Auth APIs
-  register: (data: { username: string; email: string; password: string; phone?: string }) => 
-    request<{ user: any; token: string }>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-  login: (usernameOrEmail: string, password: string) =>
-    request<{ user: any; token: string }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ usernameOrEmail, password }),
-    }),
-
   // User APIs
   getUsers: () => request<any[]>('/users'),
   getUser: (id: string) => request<any>(`/users/${id}`),
