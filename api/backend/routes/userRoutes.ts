@@ -1,24 +1,23 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 
 const router = express.Router();
 
-// 獲取所有用戶（公開，不包含密碼）
+// 獲取所有用戶（公開）
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find().select('-password -__v').sort({ createdAt: -1 });
+    const users = await User.find().select('-__v').sort({ createdAt: -1 });
     res.json(users);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 獲取單個用戶（不包含密碼）
+// 獲取單個用戶
 router.get('/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password -__v');
+    const user = await User.findById(req.params.id).select('-__v');
     if (!user) {
       return res.status(404).json({ error: '用戶不存在' });
     }
@@ -28,96 +27,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 註冊新用戶
-router.post('/register', async (req, res) => {
-  try {
-    // 檢查 MongoDB 連接狀態
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
-    }
-
-    const { username, email, password, phone } = req.body;
-    
-    // 驗證必填欄位
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: '請填寫所有必填欄位' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: '密碼長度至少需要 6 個字元' });
-    }
-    
-    // 檢查是否已存在
-    const existingUser = await User.findOne({ 
-      $or: [{ email: email.toLowerCase() }, { username }] 
-    });
-    
-    if (existingUser) {
-      return res.status(400).json({ error: '用戶名或電子郵件已存在' });
-    }
-
-    // 加密密碼
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({ 
-      username, 
-      email: email.toLowerCase(), 
-      password: hashedPassword,
-      phone 
-    });
-    await user.save();
-    
-    // 返回用戶資訊（不包含密碼）
-    const userResponse = user.toObject();
-    delete userResponse.password;
-    res.status(201).json(userResponse);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// 登入
-router.post('/login', async (req, res) => {
-  try {
-    // 檢查 MongoDB 連接狀態
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
-    }
-
-    const { username, password } = req.body;
-    
-    if (!username || !password) {
-      return res.status(400).json({ error: '請輸入用戶名和密碼' });
-    }
-
-    // 查找用戶（支援用戶名或電子郵件）
-    const user = await User.findOne({
-      $or: [
-        { username },
-        { email: username.toLowerCase() }
-      ]
-    });
-
-    if (!user) {
-      return res.status(401).json({ error: '用戶名或密碼錯誤' });
-    }
-
-    // 驗證密碼
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: '用戶名或密碼錯誤' });
-    }
-
-    // 返回用戶資訊（不包含密碼）
-    const userResponse = user.toObject();
-    delete userResponse.password;
-    res.json(userResponse);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 創建用戶（保留原有 API，但不包含密碼）
+// 創建用戶（如果不存在則創建，存在則返回）
 router.post('/', async (req, res) => {
   try {
     // 檢查 MongoDB 連接狀態
@@ -138,11 +48,7 @@ router.post('/', async (req, res) => {
 
     const user = new User({ username, email, phone, avatar });
     await user.save();
-    
-    // 返回用戶資訊（不包含密碼）
-    const userResponse = user.toObject();
-    delete userResponse.password;
-    res.status(201).json(userResponse);
+    res.status(201).json(user);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
@@ -191,11 +97,7 @@ router.put('/:id', async (req, res) => {
     if (avatar !== undefined) user.avatar = avatar;
 
     await user.save();
-    
-    // 返回用戶資訊（不包含密碼）
-    const userResponse = user.toObject();
-    delete userResponse.password;
-    res.json(userResponse);
+    res.json(user);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
