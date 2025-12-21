@@ -2,80 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import passport from 'passport';
-import session from 'express-session';
 import userRoutes from './routes/userRoutes.js';
 import teamMatchRoutes from './routes/teamMatchRoutes.js';
 import playerRecruitmentRoutes from './routes/playerRecruitmentRoutes.js';
-import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
 const app = express();
 
 // Middleware
-// CORS 配置
-const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // 允許的來源列表
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://match-point.vercel.app',
-      /^https:\/\/.*\.vercel\.app$/, // 允許所有 Vercel 子域名
-    ];
-    
-    // 在開發環境或沒有指定 origin 時（例如 Postman、serverless functions），允許請求
-    if (!origin || process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-      return;
-    }
-    
-    // 檢查是否在允許列表中
-    const isAllowed = allowedOrigins.some(allowed => {
-      if (typeof allowed === 'string') {
-        return allowed === origin;
-      } else if (allowed instanceof RegExp) {
-        return allowed.test(origin);
-      }
-      return false;
-    });
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.warn('CORS blocked origin:', origin);
-      callback(null, true); // 暫時允許所有來源以便調試，生產環境應該更嚴格
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
-
-// Session 配置（用於 Passport）
-// 注意：在 Vercel serverless 環境中，session 可能不會持久化
-// 但 Passport 仍然需要它來初始化
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'your-session-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 小時
-    },
-  })
-);
-
-// 初始化 Passport
-app.use(passport.initialize());
-app.use(passport.session());
 
 // MongoDB 連接
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/match-point';
@@ -144,32 +81,9 @@ app.use(async (req, res, next) => {
 });
 
 // Routes
-app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/team-matches', teamMatchRoutes);
 app.use('/api/player-recruitments', playerRecruitmentRoutes);
-
-// 全局錯誤處理中間件
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(err.status || 500).json({
-    error: err.message || '內部伺服器錯誤',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
-});
-
-// 404 處理（添加詳細的調試資訊）
-app.use((req: express.Request, res: express.Response) => {
-  console.error('404 - 路由不存在:', req.method, req.path);
-  console.error('請求 URL:', req.url);
-  console.error('請求原始 URL:', req.originalUrl);
-  res.status(404).json({ 
-    error: '路由不存在',
-    path: req.path,
-    method: req.method,
-    message: `無法找到 ${req.method} ${req.path} 路由`
-  });
-});
 
 // Health check
 app.get('/api/health', async (req, res) => {

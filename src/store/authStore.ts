@@ -5,37 +5,39 @@ import { api } from '../services/api';
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, phone: string | undefined, password: string) => Promise<boolean>;
+  token: string | null;
+  login: (usernameOrEmail: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string, phone?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User) => void;
-  checkAuth: () => Promise<void>;
 }
 
-// 從 localStorage 讀取保存的用戶信息
-const loadUserFromStorage = (): User | null => {
+// 從 localStorage 讀取保存的用戶信息和token
+const loadAuthFromStorage = (): { user: User | null; token: string | null } => {
   try {
     const stored = localStorage.getItem('auth-storage');
     if (stored) {
       const data = JSON.parse(stored);
-      return data.user || null;
+      return {
+        user: data.user || null,
+        token: data.token || null,
+      };
     }
   } catch (e) {
     // 忽略錯誤
   }
-  return null;
+  return { user: null, token: null };
 };
 
-// 保存用戶信息到 localStorage
-const saveUserToStorage = (user: User | null, token?: string) => {
+// 保存用戶信息和token到 localStorage
+const saveAuthToStorage = (user: User | null, token: string | null) => {
   try {
-    if (user) {
-      const data: any = { user, isAuthenticated: true };
-      if (token) {
-        data.token = token;
-      }
-      localStorage.setItem('auth-storage', JSON.stringify(data));
+    if (user && token) {
+      localStorage.setItem('auth-storage', JSON.stringify({ 
+        user, 
+        token,
+        isAuthenticated: true 
+      }));
     } else {
       localStorage.removeItem('auth-storage');
     }
@@ -44,58 +46,50 @@ const saveUserToStorage = (user: User | null, token?: string) => {
   }
 };
 
-const storedUser = loadUserFromStorage();
+const { user: storedUser, token: storedToken } = loadAuthFromStorage();
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: storedUser,
-  isAuthenticated: !!storedUser,
-  isLoading: false,
-  login: async (username: string, password: string) => {
+  token: storedToken,
+  isAuthenticated: !!(storedUser && storedToken),
+  login: async (usernameOrEmail: string, password: string) => {
     try {
-      set({ isLoading: true });
-      const response = await api.login(username, password);
-      saveUserToStorage(response.user, response.token);
-      set({ user: response.user, isAuthenticated: true, isLoading: false });
+      const response = await api.login(usernameOrEmail, password);
+      saveAuthToStorage(response.user, response.token);
+      set({ 
+        user: response.user, 
+        token: response.token,
+        isAuthenticated: true 
+      });
       return true;
     } catch (error: any) {
-      set({ isLoading: false });
       console.error('Login error:', error);
-      throw error;
+      return false;
     }
   },
-  register: async (username: string, email: string, phone: string | undefined, password: string) => {
+  register: async (username: string, email: string, password: string, phone?: string) => {
     try {
-      set({ isLoading: true });
-      const response = await api.register({ username, email, phone, password });
-      saveUserToStorage(response.user, response.token);
-      set({ user: response.user, isAuthenticated: true, isLoading: false });
+      const response = await api.register({ username, email, password, phone });
+      saveAuthToStorage(response.user, response.token);
+      set({ 
+        user: response.user, 
+        token: response.token,
+        isAuthenticated: true 
+      });
       return true;
     } catch (error: any) {
-      set({ isLoading: false });
       console.error('Register error:', error);
       throw error;
     }
   },
   logout: () => {
-    api.clearToken();
-    saveUserToStorage(null);
-    set({ user: null, isAuthenticated: false });
+    saveAuthToStorage(null, null);
+    set({ user: null, token: null, isAuthenticated: false });
   },
   updateUser: (updatedUser: User) => {
-    saveUserToStorage(updatedUser);
+    const { token } = loadAuthFromStorage();
+    saveAuthToStorage(updatedUser, token);
     set({ user: updatedUser });
-  },
-  checkAuth: async () => {
-    try {
-      const user = await api.getCurrentUser();
-      saveUserToStorage(user);
-      set({ user, isAuthenticated: true });
-    } catch (error) {
-      // Token 無效或過期
-      api.clearToken();
-      saveUserToStorage(null);
-      set({ user: null, isAuthenticated: false });
-    }
   },
 }));
 
