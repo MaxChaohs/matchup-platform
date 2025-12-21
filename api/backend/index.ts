@@ -158,9 +158,17 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// 404 處理
+// 404 處理（添加詳細的調試資訊）
 app.use((req: express.Request, res: express.Response) => {
-  res.status(404).json({ error: '路由不存在' });
+  console.error('404 - 路由不存在:', req.method, req.path);
+  console.error('請求 URL:', req.url);
+  console.error('請求原始 URL:', req.originalUrl);
+  res.status(404).json({ 
+    error: '路由不存在',
+    path: req.path,
+    method: req.method,
+    message: `無法找到 ${req.method} ${req.path} 路由`
+  });
 });
 
 // Health check

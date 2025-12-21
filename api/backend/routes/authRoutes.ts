@@ -209,6 +209,67 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// 處理錯誤的回調路徑（必須在 /google 路由之前）
+// 注意：這是為了處理 Google Cloud Console 中可能設置錯誤的回調 URL
+// 直接使用相同的處理邏輯，而不是重定向
+router.get('/callback/google', 
+  (req, res, next) => {
+    console.warn('⚠️ 檢測到錯誤的回調路徑 /api/auth/callback/google');
+    console.warn('⚠️ 請在 Google Cloud Console 中將回調 URL 改為: /api/auth/google/callback');
+    console.warn('⚠️ 臨時處理此請求，使用正確的回調處理邏輯');
+    next();
+  },
+  (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
+      if (err) {
+        console.error('Google OAuth callback error:', err);
+        const frontendUrl = process.env.FRONTEND_URL || 
+          (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+        return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+      }
+      
+      if (!user) {
+        console.error('Google OAuth: No user returned');
+        const frontendUrl = process.env.FRONTEND_URL || 
+          (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+        return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+      }
+      
+      // 將用戶附加到 request
+      (req as AuthRequest).user = user;
+      next();
+    })(req, res, next);
+  },
+  (req: AuthRequest, res) => {
+    try {
+      if (!req.user) {
+        const frontendUrl = process.env.FRONTEND_URL || 
+          (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+        return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+      }
+
+      // 生成 token
+      const token = generateToken(req.user._id.toString());
+
+      // 重定向到前端並帶上 token
+      const frontendUrl = process.env.FRONTEND_URL || 
+        (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+      
+      // 如果前後端在同一域名（Vercel 部署），使用相對路徑
+      if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
+        res.redirect(`/auth/callback?token=${token}`);
+      } else {
+        res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+      }
+    } catch (error: any) {
+      console.error('Google OAuth callback processing error:', error);
+      const frontendUrl = process.env.FRONTEND_URL || 
+        (req.headers.referer ? new URL(req.headers.referer).origin : 'http://localhost:5173');
+      res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+    }
+  }
+);
+
 // Google OAuth 登入
 router.get('/google', (req, res, next) => {
   try {
@@ -243,7 +304,7 @@ router.get('/google', (req, res, next) => {
   }
 });
 
-// Google OAuth 回調
+// Google OAuth 回調（正確的路徑）
 router.get(
   '/google/callback',
   (req, res, next) => {
