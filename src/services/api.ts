@@ -21,6 +21,15 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // Auth APIs (新增)
+  login: (data: any) => request<any>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  register: (data: any) => request<any>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   // User APIs
   getUsers: () => request<any[]>('/users'),
   getUser: (id: string) => request<any>(`/users/${id}`),

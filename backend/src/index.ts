@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 // Remove mongoose import
 import userRoutes from './routes/userRoutes.js';
-// ... other imports
+import authRoutes from './routes/authRoutes.js'
 
 dotenv.config();
 
@@ -17,7 +17,9 @@ app.use(express.json());
 
 // Routes
 app.use('/api/users', userRoutes);
-// ... other routes
+app.use('/api/auth', authRoutes); // 新增這行
+app.use('/api/users', userRoutes);
+
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Match Point API is running' });
