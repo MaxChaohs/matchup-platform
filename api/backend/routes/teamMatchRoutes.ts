@@ -6,12 +6,20 @@ const router = express.Router();
 // Helper: 處理資料格式 (將 id 轉為 _id 以相容前端)
 const formatMatch = (match: any) => {
   if (!match) return null;
-  // 如果有 creator_id 關聯的用戶資料，也處理一下
+  
   let creator = match.users; 
   if (creator) {
     creator = { ...creator, _id: creator.id };
   }
-  return { ...match, _id: match.id, creator };
+
+  return { 
+    ...match, 
+    _id: match.id, 
+    // 重要：將 Supabase 的 created_at 轉回前端習慣的 createdAt
+    createdAt: match.created_at, 
+    updatedAt: match.updated_at,
+    creator 
+  };
 };
 
 // 1. 獲取所有對戰 (支援篩選)
