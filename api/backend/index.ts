@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import userRoutes from './routes/userRoutes.js';
 import teamMatchRoutes from './routes/teamMatchRoutes.js';
 import playerRecruitmentRoutes from './routes/playerRecruitmentRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
@@ -81,6 +82,7 @@ app.use(async (req, res, next) => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/team-matches', teamMatchRoutes);
 app.use('/api/player-recruitments', playerRecruitmentRoutes);
