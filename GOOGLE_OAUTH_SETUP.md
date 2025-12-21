@@ -63,12 +63,46 @@ FRONTEND_URL=https://你的專案名稱.vercel.app
 
 ### 問題：redirect_uri_mismatch 錯誤
 
-**原因**：Google Cloud Console 中的回調 URI 與環境變數不匹配
+**原因**：Google Cloud Console 中的回調 URI 與應用程式實際使用的回調 URL 不匹配
 
-**解決方法**：
-1. 檢查 Google Cloud Console 中的「已授權的重新導向 URI」
-2. 確保與 `GOOGLE_CALLBACK_URL` 環境變數完全一致（包括協議、域名、路徑）
-3. 更新後可能需要幾分鐘才能生效
+**解決步驟**：
+
+1. **確認實際使用的回調 URL**：
+   - 查看 Vercel 部署日誌中的 "Google OAuth Callback URL" 訊息
+   - 或訪問 `/api/auth/google` 端點，查看後端日誌
+   - 實際 URL 應該是：`https://你的專案名稱.vercel.app/api/auth/google/callback`
+
+2. **在 Google Cloud Console 中添加正確的 URI**：
+   - 前往 [Google Cloud Console](https://console.cloud.google.com/)
+   - 選擇你的專案
+   - 前往「API 和服務」→「憑證」
+   - 點擊你的 OAuth 2.0 用戶端 ID
+   - 在「已授權的重新導向 URI」中添加：
+     ```
+     https://你的專案名稱.vercel.app/api/auth/google/callback
+     ```
+   - **重要**：必須與實際使用的 URL **完全一致**（包括 `https://`、完整域名、路徑）
+
+3. **設置 Vercel 環境變數**：
+   - 在 Vercel 專案設定中添加：
+     ```
+     GOOGLE_CALLBACK_URL=https://你的專案名稱.vercel.app/api/auth/google/callback
+     ```
+   - 確保與 Google Cloud Console 中的 URI **完全一致**
+
+4. **驗證設置**：
+   - 檢查 Google Cloud Console 中的 URI 是否包含 `https://`（不是 `http://`）
+   - 檢查域名是否正確（例如：`matchup-platform.vercel.app`）
+   - 檢查路徑是否正確（`/api/auth/google/callback`）
+   - 確保沒有多餘的空格或斜線
+
+5. **等待生效**：
+   - Google Cloud Console 的更改可能需要幾分鐘才能生效
+   - 重新部署 Vercel 應用程式
+
+**調試提示**：
+- 如果仍然失敗，檢查 Vercel 部署日誌中的實際回調 URL
+- 確保 Google Cloud Console 中的 URI 列表包含所有可能的變體（如果有多個部署環境）
 
 ## 測試
 

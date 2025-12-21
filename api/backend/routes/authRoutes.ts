@@ -31,6 +31,7 @@ if (hasGoogleConfig) {
   }
   
   console.log('Google OAuth Callback URL:', callbackURL);
+  console.log('⚠️ 重要：請確保此 URL 已添加到 Google Cloud Console 的「已授權的重新導向 URI」中');
 
   passport.use(
     new GoogleStrategy(
@@ -220,14 +221,18 @@ router.get('/google', (req, res, next) => {
       });
     }
     
-    // 在 Vercel 環境中，動態構建回調 URL
-    if (!process.env.GOOGLE_CALLBACK_URL && process.env.VERCEL) {
+    // 獲取實際使用的回調 URL（用於調試）
+    let actualCallbackURL = process.env.GOOGLE_CALLBACK_URL;
+    if (!actualCallbackURL) {
       const protocol = req.protocol || 'https';
       const host = req.get('host') || process.env.VERCEL_URL || 'localhost:3000';
-      const callbackURL = `${protocol}://${host}/api/auth/google/callback`;
-      
-      console.log('Google OAuth callback URL:', callbackURL);
+      actualCallbackURL = `${protocol}://${host}/api/auth/google/callback`;
     }
+    
+    console.log('🔍 Google OAuth 調試資訊：');
+    console.log('  - 實際使用的回調 URL:', actualCallbackURL);
+    console.log('  - ⚠️  請確保此 URL 已添加到 Google Cloud Console');
+    console.log('  - Google Cloud Console 路徑：API 和服務 → 憑證 → OAuth 2.0 用戶端 ID → 已授權的重新導向 URI');
     
     passport.authenticate('google', {
       scope: ['profile', 'email'],
