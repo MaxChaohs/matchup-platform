@@ -2,17 +2,36 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import passport from 'passport';
+import session from 'express-session';
 import userRoutes from './routes/userRoutes.js';
 import teamMatchRoutes from './routes/teamMatchRoutes.js';
 import playerRecruitmentRoutes from './routes/playerRecruitmentRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+}));
 app.use(express.json());
+
+// Session 配置（用於 Passport）
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret',
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// 初始化 Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // MongoDB 連接
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/match-point';
@@ -26,6 +45,7 @@ mongoose.connect(MONGODB_URI)
   });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/team-matches', teamMatchRoutes);
 app.use('/api/player-recruitments', playerRecruitmentRoutes);

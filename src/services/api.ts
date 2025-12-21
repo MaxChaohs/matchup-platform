@@ -3,13 +3,62 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
+// 獲取 token
+const getToken = (): string | null => {
+  try {
+    const stored = localStorage.getItem('auth-storage');
+    if (stored) {
+      const data = JSON.parse(stored);
+      return data.token || null;
+    }
+  } catch (e) {
+    // 忽略錯誤
+  }
+  return null;
+};
+
+// 保存 token
+const saveToken = (token: string) => {
+  try {
+    const stored = localStorage.getItem('auth-storage');
+    const data = stored ? JSON.parse(stored) : {};
+    data.token = token;
+    localStorage.setItem('auth-storage', JSON.stringify(data));
+  } catch (e) {
+    // 忽略錯誤
+  }
+};
+
+// 清除 token
+const clearToken = () => {
+  try {
+    const stored = localStorage.getItem('auth-storage');
+    if (stored) {
+      const data = JSON.parse(stored);
+      delete data.token;
+      localStorage.setItem('auth-storage', JSON.stringify(data));
+    }
+  } catch (e) {
+    // 忽略錯誤
+  }
+};
+
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const token = getToken();
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options?.headers,
+  };
+
+  // 如果有 token，添加到 header
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -21,6 +70,43 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // Auth APIs
+  register: (data: { username: string; email: string; phone?: string; password: string }) => {
+    return request<{ token: string; user: any }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }).then((response) => {
+      saveToken(response.token);
+      return response;
+    });
+  },
+  login: (username: string, password: string) => {
+    return request<{ token: string; user: any }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    }).then((response) => {
+      saveToken(response.token);
+      return response;
+    });
+  },
+  getCurrentUser: () => request<any>('/auth/me'),
+  forgotPassword: (email: string) => {
+    return request<{ message: string; resetUrl?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+  resetPassword: (token: string, password: string) => {
+    return request<{ message: string; token: string; user: any }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }).then((response) => {
+      saveToken(response.token);
+      return response;
+    });
+  },
+  clearToken,
+
   // User APIs
   getUsers: () => request<any[]>('/users'),
   getUser: (id: string) => request<any>(`/users/${id}`),

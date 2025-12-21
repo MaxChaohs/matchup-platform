@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 export default function Login() {
@@ -8,30 +8,55 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
+  // 處理 Google OAuth 回調
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const error = searchParams.get('error');
+    
+    if (error) {
+      setError('Google 登入失敗，請稍後再試');
+    } else if (token) {
+      // Token 已由後端設置，直接檢查認證狀態
+      const checkAuth = async () => {
+        try {
+          const { api } = await import('../services/api');
+          const user = await api.getCurrentUser();
+          const { useAuthStore } = await import('../store/authStore');
+          useAuthStore.getState().updateUser(user);
+          useAuthStore.getState().checkAuth();
+          navigate('/');
+        } catch (err) {
+          setError('登入失敗，請稍後再試');
+        }
+      };
+      checkAuth();
+    }
+  }, [searchParams, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
     try {
-      const success = await login(username, password);
-      if (success) {
-        navigate('/');
-      } else {
-        setError('使用者名稱或密碼錯誤');
-      }
+      await login(username, password);
+      navigate('/');
     } catch (error: any) {
-      setError('登入失敗，請稍後再試');
-      console.error('Login error:', error);
+      setError(error.message || '登入失敗，請稍後再試');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    // OAuth provider 先不實裝
-    alert(`${provider} 登入功能尚未實裝`);
+  const handleGoogleLogin = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    window.location.href = `${apiUrl}/auth/google`;
   };
 
   return (
@@ -118,17 +143,18 @@ export default function Login() {
                 />
                 <span className="ml-2 text-gray-300">Remember me</span>
               </label>
-              <a href="#" className="text-green-400 hover:text-green-300 text-sm">
+              <Link to="/forgot-password" className="text-green-400 hover:text-green-300 text-sm">
                 Forgot Password?
-              </a>
+              </Link>
             </div>
 
             {/* Log In Button */}
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-green-700 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Log In
+              {isLoading ? '登入中...' : 'Log In'}
             </button>
           </form>
 
@@ -144,7 +170,7 @@ export default function Login() {
 
           {/* Google Login Button */}
           <button
-            onClick={() => handleSocialLogin('Google')}
+            onClick={handleGoogleLogin}
             className="w-full py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3 shadow-md border border-gray-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -156,11 +182,14 @@ export default function Login() {
             <span className="font-medium">Log in with Google</span>
           </button>
 
-          {/* Test Account Info */}
-          <div className="mt-6 p-4 bg-gray-700 rounded-lg text-sm text-gray-400">
-            <p className="font-semibold mb-2">測試帳號：</p>
-            <p>帳號: test / 密碼: test123</p>
-            <p>帳號: admin / 密碼: admin123</p>
+          {/* Register Link */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-400">
+              還沒有帳號？{' '}
+              <Link to="/register" className="text-green-400 hover:text-green-300 font-medium">
+                立即註冊
+              </Link>
+            </p>
           </div>
         </div>
       </div>
