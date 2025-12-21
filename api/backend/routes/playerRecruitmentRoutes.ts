@@ -7,11 +7,6 @@ const router = express.Router();
 // 獲取所有隊員招募（公開）
 router.get('/', async (req, res) => {
   try {
-    // 檢查 MongoDB 連接狀態
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
-    }
-
     const { category, region, dayOfWeek, search } = req.query;
     const query: any = {};
 
@@ -59,11 +54,6 @@ router.get('/:id', async (req, res) => {
 // 創建隊員招募
 router.post('/', async (req, res) => {
   try {
-    // 檢查 MongoDB 連接狀態
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
-    }
-
     const {
       title,
       category,
