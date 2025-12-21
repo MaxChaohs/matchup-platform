@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
       username,
       email,
       password: hashedPassword,
-      phone: phone || undefined,
+      phone: phone && phone.trim() ? phone.trim() : undefined,
     });
 
     await user.save();
@@ -67,8 +67,8 @@ router.post('/register', async (req, res) => {
       email: user.email,
       phone: user.phone,
       avatar: user.avatar,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: user.updatedAt?.toISOString() || new Date().toISOString(),
     };
 
     res.status(201).json({
@@ -76,7 +76,15 @@ router.post('/register', async (req, res) => {
       token,
     });
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    console.error('Register error:', error);
+    // 處理 MongoDB 重複鍵錯誤
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ 
+        error: `${field === 'email' ? '電子郵件' : '使用者名稱'}已存在` 
+      });
+    }
+    res.status(400).json({ error: error.message || '註冊失敗，請稍後再試' });
   }
 });
 
@@ -125,8 +133,8 @@ router.post('/login', async (req, res) => {
       email: user.email,
       phone: user.phone,
       avatar: user.avatar,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: user.updatedAt?.toISOString() || new Date().toISOString(),
     };
 
     res.json({
@@ -134,7 +142,8 @@ router.post('/login', async (req, res) => {
       token,
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: error.message || '登入失敗，請稍後再試' });
   }
 });
 

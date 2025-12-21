@@ -79,7 +79,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       return true;
     } catch (error: any) {
       console.error('Register error:', error);
-      throw error;
+      // 確保錯誤訊息被正確傳遞
+      const errorMessage = error?.message || error?.toString() || '註冊失敗，請稍後再試';
+      throw new Error(errorMessage);
     }
   },
   logout: () => {

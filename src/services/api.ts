@@ -29,17 +29,36 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '請求失敗' }));
-    throw new Error(error.error || '請求失敗');
+    // 嘗試解析響應
+    let responseData;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json().catch(() => null);
+    } else {
+      const text = await response.text();
+      responseData = text ? { error: text } : { error: '請求失敗' };
+    }
+
+    if (!response.ok) {
+      // 從響應中提取錯誤訊息
+      const errorMessage = responseData?.error || responseData?.message || `請求失敗 (${response.status})`;
+      throw new Error(errorMessage);
+    }
+
+    return responseData as T;
+  } catch (error: any) {
+    // 如果是網絡錯誤或其他錯誤，包裝並重新拋出
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(error?.message || '網路錯誤，請檢查連線');
   }
-
-  return response.json();
 }
 
 export const api = {
