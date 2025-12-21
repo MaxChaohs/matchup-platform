@@ -24,6 +24,16 @@ export const api = {
   // User APIs
   getUsers: () => request<any[]>('/users'),
   getUser: (id: string) => request<any>(`/users/${id}`),
+  register: (data: { username: string; email: string; password: string; phone?: string }) => 
+    request<any>('/users/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  login: (username: string, password: string) => 
+    request<any>('/users/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    }),
   createUser: (data: any) => request<any>('/users', {
     method: 'POST',
     body: JSON.stringify(data),

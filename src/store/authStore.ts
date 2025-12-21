@@ -5,6 +5,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string, phone?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -48,32 +49,38 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: storedUser,
   isAuthenticated: !!storedUser,
   login: async (username: string, password: string) => {
-    const account = TEST_ACCOUNTS.find(
-      acc => acc.username === username && acc.password === password
-    );
-    
-    if (account) {
-      try {
-        // 嘗試在數據庫中創建或獲取用戶
-        const { api } = await import('../services/api');
-        const dbUser = await api.createUser({
-          username: account.user.username,
-          email: account.user.email,
-          phone: account.user.phone,
-        });
-        // 使用數據庫返回的用戶（包含真實的 _id）
-        saveUserToStorage(dbUser);
-        set({ user: dbUser, isAuthenticated: true });
-        return true;
-      } catch (error) {
-        // 如果 API 調用失敗，使用本地測試帳號
-        console.warn('無法連接到數據庫，使用本地測試帳號:', error);
+    try {
+      const { api } = await import('../services/api');
+      const dbUser = await api.login(username, password);
+      saveUserToStorage(dbUser);
+      set({ user: dbUser, isAuthenticated: true });
+      return true;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      // 如果 API 調用失敗，嘗試使用本地測試帳號（向後兼容）
+      const account = TEST_ACCOUNTS.find(
+        acc => acc.username === username && acc.password === password
+      );
+      if (account) {
+        console.warn('使用本地測試帳號');
         saveUserToStorage(account.user);
         set({ user: account.user, isAuthenticated: true });
         return true;
       }
+      return false;
     }
-    return false;
+  },
+  register: async (username: string, email: string, password: string, phone?: string) => {
+    try {
+      const { api } = await import('../services/api');
+      const dbUser = await api.register({ username, email, password, phone });
+      saveUserToStorage(dbUser);
+      set({ user: dbUser, isAuthenticated: true });
+      return true;
+    } catch (error: any) {
+      console.error('Register error:', error);
+      throw error;
+    }
   },
   logout: () => {
     saveUserToStorage(null);
