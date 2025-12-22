@@ -451,12 +451,6 @@ match-point/
 
 ---
 
-## 授權
-
-MIT License
-
----
-
 ## 聯絡
 
-如有問題或建議，歡迎提交 Issue 或 Pull Request！
+如有問題或建議，請聯絡 maxchao1217@gmail.com !
