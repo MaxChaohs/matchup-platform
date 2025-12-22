@@ -27,12 +27,21 @@
 
 1. 登入 [Supabase Dashboard](https://app.supabase.com/)
 2. 選擇你的專案
-3. 進入 **Authentication** → **Providers**
-4. 找到 **Google** 並點擊啟用
-5. 填入以下資訊：
+3. 進入 **Authentication** → **URL Configuration**
+   - 設定 **Site URL**：
+     - 開發環境：`http://localhost:5173`（或你的前端端口）
+     - 生產環境：`https://你的域名.vercel.app`
+   - 設定 **Redirect URLs**（添加以下 URL）：
+     - `http://localhost:5173/login`（開發環境）
+     - `https://你的域名.vercel.app/login`（生產環境）
+     - `http://localhost:5173/**`（開發環境萬用字元）
+     - `https://你的域名.vercel.app/**`（生產環境萬用字元）
+4. 進入 **Authentication** → **Providers**
+5. 找到 **Google** 並點擊啟用
+6. 填入以下資訊：
    - **Client ID (for OAuth)**: 從 Google Cloud Console 複製的 Client ID
    - **Client Secret (for OAuth)**: 從 Google Cloud Console 複製的 Client Secret
-6. 點擊 **Save**
+7. 點擊 **Save**
 
 ## 步驟 3: 設定環境變數
 

@@ -76,10 +76,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ error: null });
     try {
       // 使用 Supabase 進行 Google OAuth 登入
+      // 確保 redirectTo 使用完整的 URL，包括端口（如果是本地開發）
+      const redirectTo = import.meta.env.DEV 
+        ? `${window.location.origin}${window.location.pathname}`
+        : `${window.location.origin}/login`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 
