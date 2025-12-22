@@ -19,10 +19,15 @@ export default function Home() {
   const [editingMatch, setEditingMatch] = useState<TeamMatch | null>(null);
   const [editingRecruitment, setEditingRecruitment] = useState<PlayerRecruitment | null>(null);
   
-  // 隊伍對戰相關
-  const teamMatchStore = useTeamMatchStore();
-  const teamMatches = teamMatchStore.getFilteredTeamMatches(); // 搜尋結果（受篩選影響）
-  const allTeamMatches = teamMatchStore.getAllTeamMatches(); // 所有對戰（用於「我建立的對戰」）
+  // 隊伍對戰相關 - 直接訂閱 store 狀態以確保重新渲染
+  const teamMatches = useTeamMatchStore((state) => state.teamMatches); // 搜尋結果（受篩選影響）
+  const allTeamMatches = useTeamMatchStore((state) => state.allTeamMatches); // 所有對戰（用於「我建立的對戰」）
+  const teamMatchFilters = useTeamMatchStore((state) => state.filters);
+  const teamMatchSearchQuery = useTeamMatchStore((state) => state.searchQuery);
+  const setTeamMatchFilters = useTeamMatchStore((state) => state.setFilters);
+  const setTeamMatchSearchQuery = useTeamMatchStore((state) => state.setSearchQuery);
+  const fetchTeamMatches = useTeamMatchStore((state) => state.fetchTeamMatches);
+  const fetchAllTeamMatches = useTeamMatchStore((state) => state.fetchAllTeamMatches);
   
   // 檢查是否為建立者的輔助函數
   const isCreator = (item: TeamMatch | PlayerRecruitment) => {
@@ -37,10 +42,15 @@ export default function Home() {
   // 「我建立的對戰」從所有對戰中篩選，不受搜尋條件影響
   const userTeamMatches = allTeamMatches.filter(match => isCreator(match));
   
-  // 尋找隊員相關
-  const playerRecruitmentStore = usePlayerRecruitmentStore();
-  const recruitments = playerRecruitmentStore.getFilteredRecruitments(); // 搜尋結果
-  const allRecruitments = playerRecruitmentStore.getAllRecruitments(); // 所有招募
+  // 尋找隊員相關 - 直接訂閱 store 狀態以確保重新渲染
+  const recruitments = usePlayerRecruitmentStore((state) => state.recruitments); // 搜尋結果
+  const allRecruitments = usePlayerRecruitmentStore((state) => state.allRecruitments); // 所有招募
+  const playerFilters = usePlayerRecruitmentStore((state) => state.filters);
+  const playerSearchQuery = usePlayerRecruitmentStore((state) => state.searchQuery);
+  const setPlayerFilters = usePlayerRecruitmentStore((state) => state.setFilters);
+  const setPlayerSearchQuery = usePlayerRecruitmentStore((state) => state.setSearchQuery);
+  const fetchRecruitments = usePlayerRecruitmentStore((state) => state.fetchRecruitments);
+  const fetchAllRecruitments = usePlayerRecruitmentStore((state) => state.fetchAllRecruitments);
   // 「我建立的招募」從所有招募中篩選，不受搜尋條件影響
   const userRecruitments = allRecruitments.filter(rec => isCreator(rec));
 
@@ -48,13 +58,13 @@ export default function Home() {
   const regions: Region[] = ['北部', '中部', '南部'];
   const days: DayOfWeek[] = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
 
-  // 根據模式選擇對應的store
+  // 根據模式選擇對應的篩選條件
   const currentFilters = viewMode === 'team-match' 
-    ? teamMatchStore.filters 
-    : playerRecruitmentStore.filters;
+    ? teamMatchFilters 
+    : playerFilters;
   const currentSearchQuery = viewMode === 'team-match'
-    ? teamMatchStore.searchQuery
-    : playerRecruitmentStore.searchQuery;
+    ? teamMatchSearchQuery
+    : playerSearchQuery;
 
   const handleFilterChange = (key: keyof typeof currentFilters, value: string | undefined) => {
     const newFilters = {
@@ -62,52 +72,52 @@ export default function Home() {
       [key]: value || undefined,
     };
     if (viewMode === 'team-match') {
-      teamMatchStore.setFilters(newFilters);
+      setTeamMatchFilters(newFilters);
     } else {
-      playerRecruitmentStore.setFilters(newFilters);
+      setPlayerFilters(newFilters);
     }
   };
 
   const handleSearchChange = (query: string) => {
     if (viewMode === 'team-match') {
-      teamMatchStore.setSearchQuery(query);
+      setTeamMatchSearchQuery(query);
     } else {
-      playerRecruitmentStore.setSearchQuery(query);
+      setPlayerSearchQuery(query);
     }
   };
 
   const clearFilters = () => {
     if (viewMode === 'team-match') {
-      teamMatchStore.setFilters({});
-      teamMatchStore.setSearchQuery('');
+      setTeamMatchFilters({});
+      setTeamMatchSearchQuery('');
     } else {
-      playerRecruitmentStore.setFilters({});
-      playerRecruitmentStore.setSearchQuery('');
+      setPlayerFilters({});
+      setPlayerSearchQuery('');
     }
   };
 
   // 獲取數據
   useEffect(() => {
     // 獲取篩選後的數據（用於搜尋結果）
-    teamMatchStore.fetchTeamMatches();
-    playerRecruitmentStore.fetchRecruitments();
+    fetchTeamMatches();
+    fetchRecruitments();
     // 獲取所有數據（用於「我建立的」區塊，不受篩選影響）
-    teamMatchStore.fetchAllTeamMatches();
-    playerRecruitmentStore.fetchAllRecruitments();
+    fetchAllTeamMatches();
+    fetchAllRecruitments();
   }, []);
 
   // 當篩選或搜尋改變時重新獲取數據
   // 使用 JSON.stringify 來確保能正確偵測 filters 物件的變化
-  const teamFiltersStr = JSON.stringify(teamMatchStore.filters);
-  const playerFiltersStr = JSON.stringify(playerRecruitmentStore.filters);
+  const teamFiltersStr = JSON.stringify(teamMatchFilters);
+  const playerFiltersStr = JSON.stringify(playerFilters);
   
   useEffect(() => {
-    teamMatchStore.fetchTeamMatches();
-  }, [teamFiltersStr, teamMatchStore.searchQuery]);
+    fetchTeamMatches();
+  }, [teamFiltersStr, teamMatchSearchQuery]);
 
   useEffect(() => {
-    playerRecruitmentStore.fetchRecruitments();
-  }, [playerFiltersStr, playerRecruitmentStore.searchQuery]);
+    fetchRecruitments();
+  }, [playerFiltersStr, playerSearchQuery]);
 
   // 處理刪除用戶
   const handleDeleteUser = async () => {
@@ -134,8 +144,8 @@ export default function Home() {
         return;
       }
       await api.deleteTeamMatch(matchId);
-      teamMatchStore.fetchTeamMatches();
-      teamMatchStore.fetchAllTeamMatches(); // 刷新「我建立的對戰」
+      fetchTeamMatches();
+      fetchAllTeamMatches(); // 刷新「我建立的對戰」
     } catch (error: any) {
       alert(error.message || '刪除失敗');
     }
@@ -152,8 +162,8 @@ export default function Home() {
         return;
       }
       await api.deletePlayerRecruitment(recruitmentId);
-      playerRecruitmentStore.fetchRecruitments();
-      playerRecruitmentStore.fetchAllRecruitments(); // 刷新「我建立的招募」
+      fetchRecruitments();
+      fetchAllRecruitments(); // 刷新「我建立的招募」
     } catch (error: any) {
       alert(error.message || '刪除失敗');
     }
@@ -880,8 +890,8 @@ export default function Home() {
           user={user}
           onClose={() => setShowCreateTeamMatch(false)}
           onSuccess={() => {
-            teamMatchStore.fetchTeamMatches();
-            teamMatchStore.fetchAllTeamMatches();
+            fetchTeamMatches();
+            fetchAllTeamMatches();
             setShowCreateTeamMatch(false);
           }}
         />
@@ -892,8 +902,8 @@ export default function Home() {
           user={user}
           onClose={() => setShowCreateRecruitment(false)}
           onSuccess={() => {
-            playerRecruitmentStore.fetchRecruitments();
-            playerRecruitmentStore.fetchAllRecruitments();
+            fetchRecruitments();
+            fetchAllRecruitments();
             setShowCreateRecruitment(false);
           }}
         />
@@ -904,8 +914,8 @@ export default function Home() {
           match={editingMatch}
           onClose={() => setEditingMatch(null)}
           onSuccess={() => {
-            teamMatchStore.fetchTeamMatches();
-            teamMatchStore.fetchAllTeamMatches();
+            fetchTeamMatches();
+            fetchAllTeamMatches();
             setEditingMatch(null);
           }}
         />
@@ -916,8 +926,8 @@ export default function Home() {
           recruitment={editingRecruitment}
           onClose={() => setEditingRecruitment(null)}
           onSuccess={() => {
-            playerRecruitmentStore.fetchRecruitments();
-            playerRecruitmentStore.fetchAllRecruitments();
+            fetchRecruitments();
+            fetchAllRecruitments();
             setEditingRecruitment(null);
           }}
         />
