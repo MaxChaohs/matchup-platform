@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
 import Login from './pages/Login';
@@ -12,7 +12,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AuthListener() {
   const { syncGoogleUser } = useAuthStore();
-  const navigate = useNavigate();
 
   useEffect(() => {
     // 檢查是否有現有的 session

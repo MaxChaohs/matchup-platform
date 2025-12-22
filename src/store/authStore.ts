@@ -76,7 +76,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ error: null });
     try {
       // 使用 Supabase 進行 Google OAuth 登入
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/login`,
