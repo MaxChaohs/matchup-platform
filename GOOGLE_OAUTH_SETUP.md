@@ -85,9 +85,30 @@ SUPABASE_KEY=你的Supabase匿名金鑰
 
 ## 常見問題
 
+### OAuth state parameter missing 錯誤
+
+如果看到 `OAuth state parameter missing` 錯誤，通常是因為：
+
+1. **Supabase Redirect URLs 未正確設定**：
+   - 進入 Supabase Dashboard → Authentication → URL Configuration
+   - 確認 **Redirect URLs** 中包含：`https://你的域名.vercel.app/login`
+   - 必須包含完整的 URL（包括 `https://` 和路徑 `/login`）
+
+2. **Site URL 設定錯誤**：
+   - Site URL 應該設定為：`https://你的域名.vercel.app`（不包含 `/login`）
+
+3. **檢查設定**：
+   - 確認 Redirect URLs 中沒有多餘的斜線
+   - 確認 URL 完全匹配（包括協議、域名、路徑）
+
 ### 重定向 URI 不匹配
 
 確保在 Google Cloud Console 中設定的重定向 URI 與 Supabase 和你的應用程式 URL 完全匹配。
+
+**重要**：Google Cloud Console 中的重定向 URI 應該只包含：
+- `https://你的專案.supabase.co/auth/v1/callback`
+
+**不需要**在 Google Cloud Console 中添加應用程式的 URL，因為 Supabase 會處理重定向。
 
 ### 環境變數未設定
 

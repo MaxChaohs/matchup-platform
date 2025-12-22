@@ -76,24 +76,25 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ error: null });
     try {
       // 使用 Supabase 進行 Google OAuth 登入
-      // 確保 redirectTo 使用完整的 URL，包括端口（如果是本地開發）
-      const redirectTo = import.meta.env.DEV 
-        ? `${window.location.origin}${window.location.pathname}`
-        : `${window.location.origin}/login`;
+      // redirectTo 必須是完整的 URL，且必須在 Supabase Dashboard 的 Redirect URLs 中設定
+      const redirectTo = `${window.location.origin}/login`;
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('開始 Google OAuth，redirectTo:', redirectTo);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('OAuth 初始化錯誤:', error);
+        throw error;
+      }
       
+      // signInWithOAuth 會返回一個 URL，用戶需要被重定向到這個 URL
+      // 但實際上 Supabase 會自動處理重定向，所以這裡不需要手動處理
       // OAuth 會重定向到 Google，然後回到 redirectTo URL
       // 實際的用戶資料同步會在 App.tsx 的認證狀態監聽中處理
       return true;

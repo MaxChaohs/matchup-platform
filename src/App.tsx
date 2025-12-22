@@ -14,9 +14,22 @@ function AuthListener() {
   const { syncGoogleUser } = useAuthStore();
 
   useEffect(() => {
-    // 處理 OAuth 回調 - 檢查 URL hash 中的認證資訊
+    // 處理 OAuth 回調 - 檢查 URL 參數和 hash 中的認證資訊
     const handleAuthCallback = async () => {
-      // 檢查 URL 中是否有認證相關的 hash 參數
+      // 檢查 URL 查詢參數中的錯誤（Supabase 回調錯誤）
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryError = urlParams.get('error');
+      const queryErrorDescription = urlParams.get('error_description');
+      
+      if (queryError) {
+        console.error('OAuth 查詢參數錯誤:', queryError, queryErrorDescription);
+        useAuthStore.setState({ error: queryErrorDescription || queryError || 'Google 登入失敗' });
+        // 清除 URL 參數
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      // 檢查 URL hash 中的認證資訊
       if (window.location.hash) {
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
@@ -24,8 +37,8 @@ function AuthListener() {
         const errorDescription = hashParams.get('error_description');
         
         if (error) {
-          console.error('OAuth 錯誤:', error, errorDescription);
-          useAuthStore.setState({ error: errorDescription || 'Google 登入失敗' });
+          console.error('OAuth hash 錯誤:', error, errorDescription);
+          useAuthStore.setState({ error: errorDescription || error || 'Google 登入失敗' });
           // 清除 URL hash
           window.history.replaceState({}, document.title, window.location.pathname);
           return;
