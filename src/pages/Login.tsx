@@ -260,13 +260,6 @@ export default function Login() {
               </button>
             </p>
           </div>
-
-          {/* Test Account Info */}
-          <div className="mt-6 p-4 bg-gray-700/50 border border-gray-600 rounded-lg text-sm text-gray-400">
-             <p className="font-semibold mb-2 text-gray-300">測試帳號：</p>
-             <p>註冊新帳號即可使用，或使用舊測試帳號。</p>
-          </div>
-          
         </div>
       </div>
 
