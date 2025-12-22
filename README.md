@@ -31,7 +31,7 @@
 
 ### 部署
 - Vercel (前端 + 後端)
-- Supabase (資料庫與認證)
+- Supabase (資料庫)
 
 ## 安裝與運行
 
@@ -259,7 +259,7 @@ match-point/
 ├── src/                    # 前端原始碼
 │   ├── components/         # React 組件
 │   ├── pages/              # 頁面組件
-│   ├── services/            # API 服務
+│   ├── services/           # API 服務
 │   ├── store/              # Zustand 狀態管理
 │   └── types/              # TypeScript 類型定義
 └── package.json            # 前端依賴
@@ -273,10 +273,8 @@ match-point/
 - ✅ 使用者認證（註冊/登入）完成
 - ✅ CRUD 功能完成
 - ✅ 前端 CRUD UI 整合完成
-- ⏳ Google OAuth（尚未實裝）
 
 ## 相關文件
 
 - [部署指南](./DEPLOY.md)
 - [環境變數設定](./ENV_SETUP.md)
-
