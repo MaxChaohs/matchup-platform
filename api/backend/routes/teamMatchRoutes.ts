@@ -101,7 +101,7 @@ router.post('/', async (req, res) => {
         creator_id: creatorId,  // 轉為 snake_case
         team_size: teamSize,     // 轉為 snake_case
         max_teams: maxTeams || 2, // 轉為 snake_case，預設2隊
-        current_teams: 1,        // 預設1隊（建立者）
+        // current_teams 欄位不存在於資料庫，將在 formatMatch 中預設為 1
         team_name: teamName      // 轉為 snake_case
       }])
       .select('*, users:creator_id (id, username, email, avatar)')
