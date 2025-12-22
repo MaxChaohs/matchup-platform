@@ -155,4 +155,189 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// ===== 報名相關 API =====
+
+// Helper: 格式化報名資料
+const formatApplication = (app: any) => {
+  if (!app) return null;
+  const user = app.users || app.user;
+  return {
+    ...app,
+    _id: app.id,
+    recruitmentId: app.recruitment_id,
+    userId: app.user_id,
+    contactInfo: app.contact_info,
+    createdAt: app.created_at,
+    user: user ? {
+      _id: user.id,
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      phone: user.phone
+    } : undefined
+  };
+};
+
+// 6. 報名找隊員
+router.post('/:id/apply', async (req, res) => {
+  try {
+    const recruitmentId = req.params.id;
+    const { userId, contactInfo, message } = req.body;
+
+    if (!userId || !contactInfo) {
+      return res.status(400).json({ error: '缺少必要欄位：userId 和 contactInfo' });
+    }
+
+    // 檢查招募是否存在
+    const { data: recruitment, error: recError } = await supabase
+      .from('player_recruitments')
+      .select('*, creator:creator_id (id, username, email, phone)')
+      .eq('id', recruitmentId)
+      .single();
+
+    if (recError || !recruitment) {
+      return res.status(404).json({ error: '找不到該招募' });
+    }
+
+    // 檢查是否為建立者（建立者不能報名自己的招募）
+    if (recruitment.creator_id === userId) {
+      return res.status(400).json({ error: '您不能報名自己建立的招募' });
+    }
+
+    // 檢查是否已報名
+    const { data: existingApp } = await supabase
+      .from('recruitment_applications')
+      .select('id')
+      .eq('recruitment_id', recruitmentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existingApp) {
+      return res.status(400).json({ error: '您已經報名過此招募' });
+    }
+
+    // 建立報名記錄
+    const { data: application, error: appError } = await supabase
+      .from('recruitment_applications')
+      .insert([{
+        recruitment_id: recruitmentId,
+        user_id: userId,
+        contact_info: contactInfo,
+        message: message,
+        status: 'pending'
+      }])
+      .select('*, users:user_id (id, username, email, phone)')
+      .single();
+
+    if (appError) throw appError;
+
+    // 更新招募的 current_players
+    await supabase
+      .from('player_recruitments')
+      .update({ current_players: (recruitment.current_players || 1) + 1 })
+      .eq('id', recruitmentId);
+
+    // 回傳報名資訊和建立者聯絡資訊
+    const creator = recruitment.creator;
+    res.status(201).json({
+      application: formatApplication(application),
+      creatorContact: {
+        username: creator?.username,
+        email: creator?.email,
+        phone: creator?.phone
+      },
+      message: '報名成功！'
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 7. 獲取招募的報名者清單
+router.get('/:id/applications', async (req, res) => {
+  try {
+    const recruitmentId = req.params.id;
+    const { userId } = req.query;
+
+    // 檢查招募是否存在並獲取建立者資訊
+    const { data: recruitment, error: recError } = await supabase
+      .from('player_recruitments')
+      .select('creator_id')
+      .eq('id', recruitmentId)
+      .single();
+
+    if (recError || !recruitment) {
+      return res.status(404).json({ error: '找不到該招募' });
+    }
+
+    // 獲取報名者清單
+    const { data: applications, error: appError } = await supabase
+      .from('recruitment_applications')
+      .select('*, users:user_id (id, username, email, phone)')
+      .eq('recruitment_id', recruitmentId)
+      .order('created_at', { ascending: false });
+
+    if (appError) throw appError;
+
+    res.json({
+      applications: applications.map(formatApplication),
+      isCreator: recruitment.creator_id === userId
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 8. 更新報名狀態
+router.put('/:id/applications/:appId', async (req, res) => {
+  try {
+    const { appId } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: '無效的狀態值' });
+    }
+
+    const { data, error } = await supabase
+      .from('recruitment_applications')
+      .update({ status })
+      .eq('id', appId)
+      .select('*, users:user_id (id, username, email, phone)')
+      .single();
+
+    if (error) throw error;
+    res.json(formatApplication(data));
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 9. 檢查用戶是否已報名
+router.get('/:id/check-application', async (req, res) => {
+  try {
+    const recruitmentId = req.params.id;
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: '缺少 userId' });
+    }
+
+    const { data, error } = await supabase
+      .from('recruitment_applications')
+      .select('*')
+      .eq('recruitment_id', recruitmentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+
+    res.json({
+      isApplied: !!data,
+      application: data ? formatApplication(data) : null
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

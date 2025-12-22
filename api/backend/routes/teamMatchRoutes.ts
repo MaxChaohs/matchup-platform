@@ -166,4 +166,191 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// ===== 報名相關 API =====
+
+// Helper: 格式化報名資料
+const formatRegistration = (reg: any) => {
+  if (!reg) return null;
+  const user = reg.users || reg.user;
+  return {
+    ...reg,
+    _id: reg.id,
+    matchId: reg.match_id,
+    userId: reg.user_id,
+    teamName: reg.team_name,
+    contactInfo: reg.contact_info,
+    createdAt: reg.created_at,
+    user: user ? {
+      _id: user.id,
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      phone: user.phone
+    } : undefined
+  };
+};
+
+// 6. 報名加入對戰
+router.post('/:id/register', async (req, res) => {
+  try {
+    const matchId = req.params.id;
+    const { userId, teamName, contactInfo, message } = req.body;
+
+    if (!userId || !contactInfo) {
+      return res.status(400).json({ error: '缺少必要欄位：userId 和 contactInfo' });
+    }
+
+    // 檢查對戰是否存在
+    const { data: match, error: matchError } = await supabase
+      .from('team_matches')
+      .select('*, users:creator_id (id, username, email, phone)')
+      .eq('id', matchId)
+      .single();
+
+    if (matchError || !match) {
+      return res.status(404).json({ error: '找不到該對戰' });
+    }
+
+    // 檢查是否為建立者（建立者不能報名自己的對戰）
+    if (match.creator_id === userId) {
+      return res.status(400).json({ error: '您不能報名自己建立的對戰' });
+    }
+
+    // 檢查是否已報名
+    const { data: existingReg } = await supabase
+      .from('match_registrations')
+      .select('id')
+      .eq('match_id', matchId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existingReg) {
+      return res.status(400).json({ error: '您已經報名過此對戰' });
+    }
+
+    // 建立報名記錄
+    const { data: registration, error: regError } = await supabase
+      .from('match_registrations')
+      .insert([{
+        match_id: matchId,
+        user_id: userId,
+        team_name: teamName,
+        contact_info: contactInfo,
+        message: message,
+        status: 'pending'
+      }])
+      .select('*, users:user_id (id, username, email, phone)')
+      .single();
+
+    if (regError) throw regError;
+
+    // 更新對戰的 current_teams
+    await supabase
+      .from('team_matches')
+      .update({ current_teams: (match.current_teams || 1) + 1 })
+      .eq('id', matchId);
+
+    // 回傳報名資訊和建立者聯絡資訊
+    const creator = match.users;
+    res.status(201).json({
+      registration: formatRegistration(registration),
+      creatorContact: {
+        username: creator?.username,
+        email: creator?.email,
+        phone: creator?.phone
+      },
+      message: '報名成功！'
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 7. 獲取對戰的報名者清單
+router.get('/:id/registrations', async (req, res) => {
+  try {
+    const matchId = req.params.id;
+    const { userId } = req.query;
+
+    // 檢查對戰是否存在並獲取建立者資訊
+    const { data: match, error: matchError } = await supabase
+      .from('team_matches')
+      .select('creator_id')
+      .eq('id', matchId)
+      .single();
+
+    if (matchError || !match) {
+      return res.status(404).json({ error: '找不到該對戰' });
+    }
+
+    // 獲取報名者清單
+    const { data: registrations, error: regError } = await supabase
+      .from('match_registrations')
+      .select('*, users:user_id (id, username, email, phone)')
+      .eq('match_id', matchId)
+      .order('created_at', { ascending: false });
+
+    if (regError) throw regError;
+
+    res.json({
+      registrations: registrations.map(formatRegistration),
+      isCreator: match.creator_id === userId
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 8. 更新報名狀態
+router.put('/:id/registrations/:regId', async (req, res) => {
+  try {
+    const { regId } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: '無效的狀態值' });
+    }
+
+    const { data, error } = await supabase
+      .from('match_registrations')
+      .update({ status })
+      .eq('id', regId)
+      .select('*, users:user_id (id, username, email, phone)')
+      .single();
+
+    if (error) throw error;
+    res.json(formatRegistration(data));
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 9. 檢查用戶是否已報名
+router.get('/:id/check-registration', async (req, res) => {
+  try {
+    const matchId = req.params.id;
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: '缺少 userId' });
+    }
+
+    const { data, error } = await supabase
+      .from('match_registrations')
+      .select('*')
+      .eq('match_id', matchId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+
+    res.json({
+      isRegistered: !!data,
+      registration: data ? formatRegistration(data) : null
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

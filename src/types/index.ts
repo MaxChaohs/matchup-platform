@@ -95,3 +95,52 @@ export interface MatchFilters {
 
 export type ViewMode = 'team-match' | 'find-player';
 
+// 報名狀態
+export type RegistrationStatus = 'pending' | 'accepted' | 'rejected';
+
+// 隊伍對戰報名
+export interface MatchRegistration {
+  _id: string;
+  id?: string;
+  matchId: string;
+  userId: string;
+  teamName?: string;
+  contactInfo: string;
+  message?: string;
+  status: RegistrationStatus;
+  createdAt: string;
+  user?: {
+    _id: string;
+    id?: string;
+    username: string;
+    email: string;
+    phone?: string;
+  };
+}
+
+// 找隊員報名
+export interface RecruitmentApplication {
+  _id: string;
+  id?: string;
+  recruitmentId: string;
+  userId: string;
+  contactInfo: string;
+  message?: string;
+  status: RegistrationStatus;
+  createdAt: string;
+  user?: {
+    _id: string;
+    id?: string;
+    username: string;
+    email: string;
+    phone?: string;
+  };
+}
+
+// 建立者聯絡資訊
+export interface CreatorContact {
+  username: string;
+  email: string;
+  phone?: string;
+}
+

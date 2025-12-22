@@ -8,6 +8,9 @@ import CreateTeamMatchModal from '../components/CreateTeamMatchModal';
 import CreatePlayerRecruitmentModal from '../components/CreatePlayerRecruitmentModal';
 import EditTeamMatchModal from '../components/EditTeamMatchModal';
 import EditPlayerRecruitmentModal from '../components/EditPlayerRecruitmentModal';
+import JoinMatchModal from '../components/JoinMatchModal';
+import ApplyRecruitmentModal from '../components/ApplyRecruitmentModal';
+import RegistrationList from '../components/RegistrationList';
 import { api } from '../services/api';
 
 export default function Home() {
@@ -18,6 +21,9 @@ export default function Home() {
   const [showCreateRecruitment, setShowCreateRecruitment] = useState(false);
   const [editingMatch, setEditingMatch] = useState<TeamMatch | null>(null);
   const [editingRecruitment, setEditingRecruitment] = useState<PlayerRecruitment | null>(null);
+  const [joiningMatch, setJoiningMatch] = useState<TeamMatch | null>(null);
+  const [applyingRecruitment, setApplyingRecruitment] = useState<PlayerRecruitment | null>(null);
+  const [viewingRegistrations, setViewingRegistrations] = useState<{ type: 'match' | 'recruitment'; id: string } | null>(null);
   
   // 隊伍對戰相關 - 直接訂閱 store 狀態以確保重新渲染
   const teamMatches = useTeamMatchStore((state) => state.teamMatches); // 搜尋結果（受篩選影響）
@@ -524,6 +530,21 @@ export default function Home() {
                                 <p className="text-sm text-gray-700">{match.description}</p>
                               </div>
                             )}
+                            
+                            {/* 加入對戰按鈕（非建立者可見） */}
+                            {user && !isCreator(match) && (
+                              <div className="mt-4 pt-4 border-t border-gray-100">
+                                <button
+                                  onClick={() => setJoiningMatch(match)}
+                                  className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all font-bold shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                  </svg>
+                                  <span>加入對戰</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -629,8 +650,19 @@ export default function Home() {
                               <p className="text-sm text-gray-700">{match.description}</p>
                             </div>
                           )}
+                          {/* 查看報名者按鈕 */}
+                          <button
+                            onClick={() => setViewingRegistrations({ type: 'match', id: match._id || match.id || '' })}
+                            className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all font-medium flex items-center justify-center space-x-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span>查看報名者 ({match.currentTeams - 1})</span>
+                          </button>
+                          
                           {/* 編輯和刪除按鈕 */}
-                          <div className="flex space-x-2 mt-4">
+                          <div className="flex space-x-2 mt-2">
                             <button
                               onClick={() => setEditingMatch(match)}
                               className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
@@ -746,6 +778,21 @@ export default function Home() {
                                 <p className="text-sm text-gray-700">{recruitment.description}</p>
                               </div>
                             )}
+                            
+                            {/* 我要報名按鈕（非建立者可見） */}
+                            {user && !isCreator(recruitment) && (
+                              <div className="mt-4 pt-4 border-t border-gray-100">
+                                <button
+                                  onClick={() => setApplyingRecruitment(recruitment)}
+                                  className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all font-bold shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                  </svg>
+                                  <span>我要報名</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -851,8 +898,19 @@ export default function Home() {
                               <p className="text-sm text-gray-700">{recruitment.description}</p>
                             </div>
                           )}
+                          {/* 查看報名者按鈕 */}
+                          <button
+                            onClick={() => setViewingRegistrations({ type: 'recruitment', id: recruitment._id || recruitment.id || '' })}
+                            className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all font-medium flex items-center justify-center space-x-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span>查看報名者 ({recruitment.currentPlayers - 1})</span>
+                          </button>
+                          
                           {/* 編輯和刪除按鈕 */}
-                          <div className="flex space-x-2 mt-4">
+                          <div className="flex space-x-2 mt-2">
                             <button
                               onClick={() => setEditingRecruitment(recruitment)}
                               className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
@@ -935,6 +993,42 @@ export default function Home() {
             fetchAllRecruitments();
             setEditingRecruitment(null);
           }}
+        />
+      )}
+
+      {/* 加入對戰彈窗 */}
+      {joiningMatch && user && (
+        <JoinMatchModal
+          match={joiningMatch}
+          user={user}
+          onClose={() => setJoiningMatch(null)}
+          onSuccess={() => {
+            fetchTeamMatches();
+            fetchAllTeamMatches();
+          }}
+        />
+      )}
+
+      {/* 報名招募彈窗 */}
+      {applyingRecruitment && user && (
+        <ApplyRecruitmentModal
+          recruitment={applyingRecruitment}
+          user={user}
+          onClose={() => setApplyingRecruitment(null)}
+          onSuccess={() => {
+            fetchRecruitments();
+            fetchAllRecruitments();
+          }}
+        />
+      )}
+
+      {/* 報名者清單彈窗 */}
+      {viewingRegistrations && (
+        <RegistrationList
+          type={viewingRegistrations.type}
+          itemId={viewingRegistrations.id}
+          userId={user?._id || user?.id}
+          onClose={() => setViewingRegistrations(null)}
         />
       )}
     </div>

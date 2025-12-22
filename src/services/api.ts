@@ -78,6 +78,24 @@ export const api = {
     method: 'DELETE',
   }),
 
+  // Team Match Registration APIs
+  registerForMatch: (matchId: string, data: { userId: string; teamName?: string; contactInfo: string; message?: string }) => 
+    request<{ registration: any; creatorContact: any; message: string }>(`/team-matches/${matchId}/register`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getMatchRegistrations: (matchId: string, userId?: string) => {
+    const query = userId ? `?userId=${userId}` : '';
+    return request<{ registrations: any[]; isCreator: boolean }>(`/team-matches/${matchId}/registrations${query}`);
+  },
+  updateMatchRegistration: (matchId: string, regId: string, status: string) => 
+    request<any>(`/team-matches/${matchId}/registrations/${regId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
+  checkMatchRegistration: (matchId: string, userId: string) => 
+    request<{ isRegistered: boolean; registration: any | null }>(`/team-matches/${matchId}/check-registration?userId=${userId}`),
+
   // Player Recruitment APIs
   getPlayerRecruitments: (params?: { category?: string; region?: string; dayOfWeek?: string; search?: string }) => {
     const query = new URLSearchParams();
@@ -100,4 +118,22 @@ export const api = {
   deletePlayerRecruitment: (id: string) => request<{ message: string }>(`/player-recruitments/${id}`, {
     method: 'DELETE',
   }),
+
+  // Player Recruitment Application APIs
+  applyForRecruitment: (recruitmentId: string, data: { userId: string; contactInfo: string; message?: string }) => 
+    request<{ application: any; creatorContact: any; message: string }>(`/player-recruitments/${recruitmentId}/apply`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getRecruitmentApplications: (recruitmentId: string, userId?: string) => {
+    const query = userId ? `?userId=${userId}` : '';
+    return request<{ applications: any[]; isCreator: boolean }>(`/player-recruitments/${recruitmentId}/applications${query}`);
+  },
+  updateRecruitmentApplication: (recruitmentId: string, appId: string, status: string) => 
+    request<any>(`/player-recruitments/${recruitmentId}/applications/${appId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
+  checkRecruitmentApplication: (recruitmentId: string, userId: string) => 
+    request<{ isApplied: boolean; application: any | null }>(`/player-recruitments/${recruitmentId}/check-application?userId=${userId}`),
 };

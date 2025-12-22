@@ -114,6 +114,25 @@ npm run dev
   - `team_name` (String, Optional)
   - `created_at`, `updated_at` (Timestamps)
 
+- **match_registrations**: 對戰報名
+  - `id` (UUID, Primary Key)
+  - `match_id` (UUID, Foreign Key → team_matches.id)
+  - `user_id` (UUID, Foreign Key → users.id)
+  - `team_name` (String, Optional) - 報名隊伍名稱
+  - `contact_info` (String) - 聯絡方式
+  - `message` (Text, Optional) - 備註訊息
+  - `status` (String) - pending/accepted/rejected
+  - `created_at` (Timestamp)
+
+- **recruitment_applications**: 招募報名
+  - `id` (UUID, Primary Key)
+  - `recruitment_id` (UUID, Foreign Key → player_recruitments.id)
+  - `user_id` (UUID, Foreign Key → users.id)
+  - `contact_info` (String) - 聯絡方式
+  - `message` (Text, Optional) - 備註訊息
+  - `status` (String) - pending/accepted/rejected
+  - `created_at` (Timestamp)
+
 ### 建立資料表
 
 在 Supabase SQL Editor 中執行以下 SQL：
@@ -173,6 +192,31 @@ CREATE TABLE IF NOT EXISTS player_recruitments (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 建立 match_registrations 表（對戰報名）
+CREATE TABLE IF NOT EXISTS match_registrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id UUID REFERENCES team_matches(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  team_name VARCHAR(100),
+  contact_info VARCHAR(255),
+  message TEXT,
+  status VARCHAR(20) DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(match_id, user_id)
+);
+
+-- 建立 recruitment_applications 表（招募報名）
+CREATE TABLE IF NOT EXISTS recruitment_applications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  recruitment_id UUID REFERENCES player_recruitments(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  contact_info VARCHAR(255),
+  message TEXT,
+  status VARCHAR(20) DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(recruitment_id, user_id)
+);
 ```
 
 ## 功能說明
@@ -190,11 +234,15 @@ CREATE TABLE IF NOT EXISTS player_recruitments (
 - 瀏覽所有公開的隊伍對戰（一對一）
 - 建立、編輯、刪除自己的隊伍對戰
 - 查看隊伍資訊（隊伍數、每隊人數）
+- **加入對戰**：報名參加他人建立的對戰
+- **查看報名者**：建立者可以查看報名者清單和聯絡資訊
 
 #### 找隊員模式
 - 瀏覽所有公開的隊員招募
 - 建立、編輯、刪除自己的隊員招募
 - 查看隊員資訊（目前人數、需要人數）
+- **我要報名**：報名加入他人的隊伍
+- **查看報名者**：建立者可以查看應徵者清單和聯絡資訊
 
 #### 個人資訊
 - 顯示使用者資訊
