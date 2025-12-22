@@ -304,13 +304,24 @@ router.get('/:id/registrations', async (req, res) => {
 // 8. 更新報名狀態
 router.put('/:id/registrations/:regId', async (req, res) => {
   try {
-    const { regId } = req.params;
+    const { id: matchId, regId } = req.params;
     const { status } = req.body;
 
     if (!['pending', 'accepted', 'rejected'].includes(status)) {
       return res.status(400).json({ error: '無效的狀態值' });
     }
 
+    // 獲取原本的報名狀態
+    const { data: oldReg, error: oldError } = await supabase
+      .from('match_registrations')
+      .select('status')
+      .eq('id', regId)
+      .single();
+
+    if (oldError) throw oldError;
+    const oldStatus = oldReg?.status;
+
+    // 更新報名狀態
     const { data, error } = await supabase
       .from('match_registrations')
       .update({ status })
@@ -319,6 +330,38 @@ router.put('/:id/registrations/:regId', async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // 如果狀態從非拒絕變成拒絕，減少隊伍數量
+    if (status === 'rejected' && oldStatus !== 'rejected') {
+      const { data: match } = await supabase
+        .from('team_matches')
+        .select('current_teams')
+        .eq('id', matchId)
+        .single();
+
+      if (match && match.current_teams > 1) {
+        await supabase
+          .from('team_matches')
+          .update({ current_teams: match.current_teams - 1 })
+          .eq('id', matchId);
+      }
+    }
+    // 如果狀態從拒絕變成其他狀態，增加隊伍數量
+    else if (oldStatus === 'rejected' && status !== 'rejected') {
+      const { data: match } = await supabase
+        .from('team_matches')
+        .select('current_teams')
+        .eq('id', matchId)
+        .single();
+
+      if (match) {
+        await supabase
+          .from('team_matches')
+          .update({ current_teams: match.current_teams + 1 })
+          .eq('id', matchId);
+      }
+    }
+
     res.json(formatRegistration(data));
   } catch (error: any) {
     res.status(400).json({ error: error.message });

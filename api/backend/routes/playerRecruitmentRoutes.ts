@@ -291,13 +291,24 @@ router.get('/:id/applications', async (req, res) => {
 // 8. 更新報名狀態
 router.put('/:id/applications/:appId', async (req, res) => {
   try {
-    const { appId } = req.params;
+    const { id: recruitmentId, appId } = req.params;
     const { status } = req.body;
 
     if (!['pending', 'accepted', 'rejected'].includes(status)) {
       return res.status(400).json({ error: '無效的狀態值' });
     }
 
+    // 獲取原本的報名狀態
+    const { data: oldApp, error: oldError } = await supabase
+      .from('recruitment_applications')
+      .select('status')
+      .eq('id', appId)
+      .single();
+
+    if (oldError) throw oldError;
+    const oldStatus = oldApp?.status;
+
+    // 更新報名狀態
     const { data, error } = await supabase
       .from('recruitment_applications')
       .update({ status })
@@ -306,6 +317,38 @@ router.put('/:id/applications/:appId', async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // 如果狀態從非拒絕變成拒絕，減少隊員數量
+    if (status === 'rejected' && oldStatus !== 'rejected') {
+      const { data: recruitment } = await supabase
+        .from('player_recruitments')
+        .select('current_players')
+        .eq('id', recruitmentId)
+        .single();
+
+      if (recruitment && recruitment.current_players > 1) {
+        await supabase
+          .from('player_recruitments')
+          .update({ current_players: recruitment.current_players - 1 })
+          .eq('id', recruitmentId);
+      }
+    }
+    // 如果狀態從拒絕變成其他狀態，增加隊員數量
+    else if (oldStatus === 'rejected' && status !== 'rejected') {
+      const { data: recruitment } = await supabase
+        .from('player_recruitments')
+        .select('current_players')
+        .eq('id', recruitmentId)
+        .single();
+
+      if (recruitment) {
+        await supabase
+          .from('player_recruitments')
+          .update({ current_players: recruitment.current_players + 1 })
+          .eq('id', recruitmentId);
+      }
+    }
+
     res.json(formatApplication(data));
   } catch (error: any) {
     res.status(400).json({ error: error.message });
