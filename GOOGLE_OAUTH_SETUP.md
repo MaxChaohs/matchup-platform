@@ -30,12 +30,15 @@
 3. 進入 **Authentication** → **URL Configuration**
    - 設定 **Site URL**：
      - 開發環境：`http://localhost:5173`（或你的前端端口）
-     - 生產環境：`https://你的域名.vercel.app`
-   - 設定 **Redirect URLs**（添加以下 URL）：
-     - `http://localhost:5173/login`（開發環境）
-     - `https://你的域名.vercel.app/login`（生產環境）
-     - `http://localhost:5173/**`（開發環境萬用字元）
-     - `https://你的域名.vercel.app/**`（生產環境萬用字元）
+     - 生產環境：`https://你的域名.vercel.app`（例如：`https://matchup-platform.vercel.app`）
+   - 設定 **Redirect URLs**（**非常重要**，必須完全匹配）：
+     - 點擊 "Add URL" 按鈕
+     - 添加：`https://你的域名.vercel.app/login`（例如：`https://matchup-platform.vercel.app/login`）
+     - **注意**：URL 必須完全匹配，包括：
+       - 協議（`https://`）
+       - 域名（完全一致）
+       - 路徑（`/login`）
+     - 可以添加萬用字元：`https://你的域名.vercel.app/**`（可選）
 4. 進入 **Authentication** → **Providers**
 5. 找到 **Google** 並點擊啟用
 6. 填入以下資訊：
@@ -87,19 +90,38 @@ SUPABASE_KEY=你的Supabase匿名金鑰
 
 ### OAuth state parameter missing 錯誤
 
-如果看到 `OAuth state parameter missing` 錯誤，通常是因為：
+如果看到 `OAuth state parameter missing` 或 `invalid_request` 錯誤，**這是 Supabase 配置問題**，請按照以下步驟修復：
 
-1. **Supabase Redirect URLs 未正確設定**：
-   - 進入 Supabase Dashboard → Authentication → URL Configuration
-   - 確認 **Redirect URLs** 中包含：`https://你的域名.vercel.app/login`
-   - 必須包含完整的 URL（包括 `https://` 和路徑 `/login`）
+1. **進入 Supabase Dashboard**：
+   - 登入 [Supabase Dashboard](https://app.supabase.com/)
+   - 選擇你的專案
 
-2. **Site URL 設定錯誤**：
-   - Site URL 應該設定為：`https://你的域名.vercel.app`（不包含 `/login`）
+2. **設定 URL Configuration**：
+   - 進入 **Authentication** → **URL Configuration**
+   - **Site URL**：設定為 `https://matchup-platform.vercel.app`（你的實際域名）
+   - **Redirect URLs**：
+     - 點擊 "Add URL"
+     - 添加：`https://matchup-platform.vercel.app/login`
+     - **重要**：必須完全匹配，包括：
+       - 協議：`https://`（不是 `http://`）
+       - 域名：完全一致（沒有多餘的斜線或路徑）
+       - 路徑：`/login`（必須包含前導斜線）
 
-3. **檢查設定**：
-   - 確認 Redirect URLs 中沒有多餘的斜線
-   - 確認 URL 完全匹配（包括協議、域名、路徑）
+3. **驗證設定**：
+   - 確認 Redirect URLs 列表中包含：`https://matchup-platform.vercel.app/login`
+   - 確認沒有多餘的空格或字符
+   - 確認 URL 格式正確（沒有雙斜線等）
+
+4. **保存並重新測試**：
+   - 點擊 "Save"
+   - 等待幾秒鐘讓設定生效
+   - 重新嘗試 Google 登入
+
+**常見錯誤**：
+- ❌ `http://matchup-platform.vercel.app/login`（錯誤：使用 http 而不是 https）
+- ❌ `https://matchup-platform.vercel.app/login/`（錯誤：多餘的尾隨斜線）
+- ❌ `matchup-platform.vercel.app/login`（錯誤：缺少協議）
+- ✅ `https://matchup-platform.vercel.app/login`（正確）
 
 ### 重定向 URI 不匹配
 

@@ -23,7 +23,17 @@ function AuthListener() {
       
       if (queryError) {
         console.error('OAuth 查詢參數錯誤:', queryError, queryErrorDescription);
-        useAuthStore.setState({ error: queryErrorDescription || queryError || 'Google 登入失敗' });
+        console.error('當前 URL:', window.location.href);
+        console.error('請確認 Supabase Dashboard → Authentication → URL Configuration → Redirect URLs 中包含:', window.location.origin + '/login');
+        
+        let errorMessage = queryErrorDescription || queryError || 'Google 登入失敗';
+        
+        // 如果是 state parameter missing 錯誤，提供更明確的提示
+        if (queryError === 'invalid_request' && queryErrorDescription?.includes('state parameter')) {
+          errorMessage = 'OAuth 設定錯誤：請在 Supabase Dashboard → Authentication → URL Configuration → Redirect URLs 中添加：' + window.location.origin + '/login';
+        }
+        
+        useAuthStore.setState({ error: errorMessage });
         // 清除 URL 參數
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
