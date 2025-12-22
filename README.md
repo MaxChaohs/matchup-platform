@@ -1,144 +1,296 @@
-# MATCH POINT - 約戰平台
+# MATCH POINT - 運動約戰平台
 
-一個用於各種運動和遊戲的約戰平台。
+一個專為運動愛好者設計的約戰與組隊平台，讓你輕鬆找到對手或隊友！
+
+## 線上體驗
+
+🌐 **正式網站**: [https://matchup-platform.vercel.app](https://matchup-platform.vercel.app)
+
+---
+
+## 目錄
+
+- [功能特色](#功能特色)
+- [系統架構](#系統架構)
+- [技術棧](#技術棧)
+- [使用指南](#使用指南)
+- [本地開發](#本地開發)
+- [雲端部署](#雲端部署)
+- [資料庫設定](#資料庫設定)
+- [API 文件](#api-文件)
+- [專案結構](#專案結構)
+
+---
 
 ## 功能特色
 
-- **找隊伍**：以完整隊伍為單位建立、參加一對一對戰
-- **找隊員**：提供使用者尋找隊員功能
-- **使用者認證**：註冊、登入功能，密碼加密儲存
-- 所有貼文公開給所有使用者查看
-- 完整的 CRUD 功能（建立、編輯、刪除）
-- 篩選與搜尋功能
+### 🏀 找隊伍（Team Match）
+- 建立隊伍對戰，邀請其他隊伍一對一較量
+- 瀏覽所有公開對戰，找到合適的對手
+- **加入對戰**：一鍵報名，系統自動交換聯絡資訊
+
+### 👥 找隊員（Player Recruitment）
+- 發布招募貼文，尋找志同道合的隊友
+- 瀏覽招募資訊，加入心儀的隊伍
+- **我要報名**：填寫自我介紹，讓隊長認識你
+
+### 📋 報名管理
+- 建立者可查看所有報名者清單
+- 顯示報名者聯絡方式（Email、電話）
+- 接受或拒絕報名，自動更新隊伍人數
+
+### 🔐 使用者系統
+- 安全的註冊/登入功能
+- 忘記密碼？透過 Email 重設
+- 編輯個人資訊、刪除帳號
+
+### 🔍 篩選與搜尋
+- 按運動類別篩選（籃球、足球、羽球...）
+- 按地區篩選（北部、中部、南部）
+- 按時間篩選（週一到週日）
+- 關鍵字全文搜尋
+
+---
+
+## 系統架構
+
+```mermaid
+flowchart TB
+    subgraph Client [前端 - React SPA]
+        UI[React 18 + TypeScript]
+        TW[Tailwind CSS]
+        ZS[Zustand 狀態管理]
+        API_Client[API Service]
+    end
+
+    subgraph Vercel [Vercel Platform]
+        CDN[CDN 靜態檔案]
+        SF[Serverless Functions]
+    end
+
+    subgraph Supabase [Supabase Cloud]
+        PG[(PostgreSQL 資料庫)]
+        RLS[Row Level Security]
+    end
+
+    subgraph Email [郵件服務]
+        Resend[Resend API]
+    end
+
+    UI --> ZS
+    ZS --> API_Client
+    API_Client -->|HTTPS| SF
+    SF -->|SQL| PG
+    SF -->|發送郵件| Resend
+    CDN --> UI
+```
+
+### 架構說明
+
+| 層級 | 技術 | 說明 |
+|------|------|------|
+| 前端 | React + Vite | 單頁應用程式 (SPA)，提供流暢的使用者體驗 |
+| 狀態管理 | Zustand | 輕量級狀態管理，處理使用者登入狀態和資料快取 |
+| 樣式 | Tailwind CSS | 原子化 CSS 框架，響應式設計 |
+| 後端 | Express.js | RESTful API，部署為 Vercel Serverless Functions |
+| 資料庫 | Supabase (PostgreSQL) | 雲端 PostgreSQL 資料庫，內建 RLS 安全機制 |
+| 郵件 | Resend | 用於發送密碼重設郵件（可選） |
+
+---
 
 ## 技術棧
 
 ### 前端
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- Zustand (狀態管理)
-- React Router
-- Lucide React (圖標)
+- **React 18** - UI 框架
+- **TypeScript** - 型別安全
+- **Vite** - 建構工具
+- **Tailwind CSS** - 樣式框架
+- **Zustand** - 狀態管理
+- **React Router** - 路由管理
+- **Lucide React** - 圖標庫
 
 ### 後端
-- Node.js + Express
-- TypeScript
-- Supabase (PostgreSQL 資料庫)
-- bcryptjs (密碼加密)
-- RESTful API
+- **Node.js + Express** - API 伺服器
+- **TypeScript** - 型別安全
+- **Supabase Client** - 資料庫操作
+- **bcryptjs** - 密碼加密
+- **Resend** - 郵件發送（可選）
 
-### 部署
-- Vercel (前端 + 後端)
-- Supabase (資料庫)
+### 部署與基礎設施
+- **Vercel** - 前端託管 + Serverless Functions
+- **Supabase** - PostgreSQL 資料庫
+- **GitHub** - 版本控制
 
-## 安裝與運行
+---
 
-### 本地開發
+## 使用指南
 
-1. 安裝前端依賴：
+### 1. 註冊與登入
+
+1. 進入網站，點擊 **Sign up** 註冊新帳號
+2. 填寫用戶名、Email、密碼（手機號碼選填）
+3. 註冊成功後自動登入
+
+### 2. 找隊伍對戰
+
+#### 建立對戰
+1. 在首頁選擇「找隊伍」模式
+2. 點擊 **+ 建立對戰**
+3. 填寫對戰資訊（標題、類別、地點、時間等）
+4. 發布後，其他用戶可以看到並報名
+
+#### 加入對戰
+1. 瀏覽搜尋結果中的對戰
+2. 找到感興趣的對戰，點擊 **加入對戰**
+3. 填寫你的隊伍名稱和聯絡方式
+4. 報名成功後，系統會顯示建立者的聯絡資訊
+
+### 3. 找隊員招募
+
+#### 發布招募
+1. 切換到「找隊員」模式
+2. 點擊 **+ 建立招募**
+3. 填寫招募資訊和需要的隊員數量
+
+#### 報名加入
+1. 瀏覽招募貼文
+2. 點擊 **我要報名**
+3. 填寫聯絡方式和自我介紹
+4. 等待隊長審核
+
+### 4. 管理報名者
+
+1. 在「我建立的」區塊找到你的貼文
+2. 點擊 **查看報名者**
+3. 查看每位報名者的聯絡資訊和備註
+4. 點擊「接受」或「拒絕」處理報名
+
+---
+
+## 本地開發
+
+### 系統需求
+
+- Node.js 18+
+- npm 或 yarn
+- Supabase 帳號（免費）
+
+### 安裝步驟
+
+1. **Clone 專案**
+```bash
+git clone https://github.com/your-username/match-point.git
+cd match-point
+```
+
+2. **安裝前端依賴**
 ```bash
 npm install
 ```
 
-2. 安裝後端依賴：
+3. **安裝後端依賴**
 ```bash
 cd backend
 npm install
+cd ..
 ```
 
-3. 設定環境變數：
+4. **設定環境變數**
 
 在專案根目錄建立 `.env`：
-```
+```env
 VITE_API_URL=http://localhost:3000/api
 ```
 
 在 `backend/` 目錄建立 `.env`：
-```
+```env
 PORT=3000
 SUPABASE_URL=你的Supabase專案URL
 SUPABASE_KEY=你的Supabase匿名金鑰
 ```
 
-**取得 Supabase 憑證：**
-1. 前往 [Supabase](https://supabase.com) 建立專案
-2. 進入專案設定 → API
-3. 複製 `Project URL` 作為 `SUPABASE_URL`
-4. 複製 `anon public` 金鑰作為 `SUPABASE_KEY`
+5. **設定資料庫**
 
-4. 啟動後端：
+在 Supabase SQL Editor 執行 [資料庫設定](#資料庫設定) 中的 SQL
+
+6. **啟動開發伺服器**
+
+終端 1 - 後端：
 ```bash
 cd backend
 npm run dev
 ```
 
-5. 啟動前端（新終端）：
+終端 2 - 前端：
 ```bash
 npm run dev
 ```
 
+7. 開啟瀏覽器訪問 `http://localhost:5173`
+
+---
+
+## 雲端部署
+
+### 部署到 Vercel
+
+#### 步驟 1：準備 Supabase
+
+1. 前往 [supabase.com](https://supabase.com) 建立免費帳號
+2. 建立新專案，選擇最近的區域
+3. 進入 **Project Settings → API**
+4. 複製：
+   - `Project URL` → 作為 `SUPABASE_URL`
+   - `anon public` 金鑰 → 作為 `SUPABASE_KEY`
+5. 進入 **SQL Editor**，執行 [資料庫設定](#資料庫設定) 中的 SQL
+
+#### 步驟 2：部署到 Vercel
+
+1. 將專案推送到 GitHub
+2. 前往 [vercel.com](https://vercel.com) 並連結 GitHub
+3. Import 專案
+4. 在 **Environment Variables** 添加：
+
+| 變數名稱 | 值 | 必填 |
+|----------|-----|------|
+| `SUPABASE_URL` | 你的 Supabase 專案 URL | ✅ |
+| `SUPABASE_KEY` | 你的 Supabase anon key | ✅ |
+| `RESEND_API_KEY` | Resend API 金鑰 | ❌ |
+| `FRONTEND_URL` | `https://你的網域.vercel.app` | ❌ |
+
+5. 點擊 **Deploy**
+
+#### 步驟 3：設定郵件發送（可選）
+
+如需啟用忘記密碼郵件功能：
+
+1. 前往 [resend.com](https://resend.com) 註冊
+2. 建立 API Key
+3. 在 Vercel 環境變數中添加 `RESEND_API_KEY`
+4. 重新部署
+
+> 💡 如未設定 RESEND_API_KEY，系統會以開發模式運行，直接顯示重設連結
+
+---
+
 ## 資料庫設定
 
-### Supabase 資料表結構
+### 資料表結構
 
-專案使用以下資料表：
-
-- **users**: 使用者資料
-  - `id` (UUID, Primary Key)
-  - `username` (String, Unique)
-  - `email` (String, Unique)
-  - `phone` (String, Optional)
-  - `avatar` (String, Optional)
-  - `password` (String, Hashed)
-  - `reset_token` (String, Optional) - 密碼重設 token
-  - `reset_token_expires` (Timestamp, Optional) - token 過期時間
-  - `created_at`, `updated_at` (Timestamps)
-
-- **team_matches**: 隊伍對戰
-  - `id` (UUID, Primary Key)
-  - `title`, `category`, `region`, `date`, `time`, `location`
-  - `description` (Text, Optional)
-  - `creator_id` (UUID, Foreign Key → users.id)
-  - `team_size`, `max_teams`, `current_teams` (Integer)
-  - `team_name` (String, Optional)
-  - `created_at`, `updated_at` (Timestamps)
-
-- **player_recruitments**: 隊員招募
-  - `id` (UUID, Primary Key)
-  - `title`, `category`, `region`, `date`, `time`, `location`
-  - `description` (Text, Optional)
-  - `creator_id` (UUID, Foreign Key → users.id)
-  - `needed_players`, `current_players` (Integer)
-  - `team_name` (String, Optional)
-  - `created_at`, `updated_at` (Timestamps)
-
-- **match_registrations**: 對戰報名
-  - `id` (UUID, Primary Key)
-  - `match_id` (UUID, Foreign Key → team_matches.id)
-  - `user_id` (UUID, Foreign Key → users.id)
-  - `team_name` (String, Optional) - 報名隊伍名稱
-  - `contact_info` (String) - 聯絡方式
-  - `message` (Text, Optional) - 備註訊息
-  - `status` (String) - pending/accepted/rejected
-  - `created_at` (Timestamp)
-
-- **recruitment_applications**: 招募報名
-  - `id` (UUID, Primary Key)
-  - `recruitment_id` (UUID, Foreign Key → player_recruitments.id)
-  - `user_id` (UUID, Foreign Key → users.id)
-  - `contact_info` (String) - 聯絡方式
-  - `message` (Text, Optional) - 備註訊息
-  - `status` (String) - pending/accepted/rejected
-  - `created_at` (Timestamp)
+| 資料表 | 說明 |
+|--------|------|
+| `users` | 使用者帳號資訊 |
+| `team_matches` | 隊伍對戰貼文 |
+| `player_recruitments` | 隊員招募貼文 |
+| `match_registrations` | 對戰報名記錄 |
+| `recruitment_applications` | 招募報名記錄 |
 
 ### 建立資料表
 
 在 Supabase SQL Editor 中執行以下 SQL：
 
 ```sql
--- 建立 users 表
+-- 使用者資料表
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT UNIQUE NOT NULL,
@@ -152,11 +304,7 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 如果已有 users 表，添加新欄位：
--- ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
--- ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
-
--- 建立 team_matches 表
+-- 隊伍對戰資料表
 CREATE TABLE IF NOT EXISTS team_matches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
@@ -175,7 +323,7 @@ CREATE TABLE IF NOT EXISTS team_matches (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 建立 player_recruitments 表
+-- 隊員招募資料表
 CREATE TABLE IF NOT EXISTS player_recruitments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
@@ -193,7 +341,7 @@ CREATE TABLE IF NOT EXISTS player_recruitments (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 建立 match_registrations 表（對戰報名）
+-- 對戰報名資料表
 CREATE TABLE IF NOT EXISTS match_registrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   match_id UUID REFERENCES team_matches(id) ON DELETE CASCADE,
@@ -206,7 +354,7 @@ CREATE TABLE IF NOT EXISTS match_registrations (
   UNIQUE(match_id, user_id)
 );
 
--- 建立 recruitment_applications 表（招募報名）
+-- 招募報名資料表
 CREATE TABLE IF NOT EXISTS recruitment_applications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recruitment_id UUID REFERENCES player_recruitments(id) ON DELETE CASCADE,
@@ -219,132 +367,96 @@ CREATE TABLE IF NOT EXISTS recruitment_applications (
 );
 ```
 
-## 功能說明
+---
 
-### 登入/註冊頁面
-- 使用者註冊（用戶名、電子郵件、密碼、手機號碼）
-- 使用者登入（用戶名、密碼）
-- 忘記密碼功能（透過電子郵件重設）
-- 密碼加密儲存（bcryptjs）
-- 表單驗證與錯誤提示
+## API 文件
 
-### 主頁面
+### 認證 API
 
-#### 找隊伍模式
-- 瀏覽所有公開的隊伍對戰（一對一）
-- 建立、編輯、刪除自己的隊伍對戰
-- 查看隊伍資訊（隊伍數、每隊人數）
-- **加入對戰**：報名參加他人建立的對戰
-- **查看報名者**：建立者可以查看報名者清單和聯絡資訊
+| 方法 | 端點 | 說明 |
+|------|------|------|
+| POST | `/api/auth/register` | 註冊新用戶 |
+| POST | `/api/auth/login` | 登入 |
+| POST | `/api/auth/forgot-password` | 發送密碼重設郵件 |
+| POST | `/api/auth/reset-password` | 重設密碼 |
+| GET | `/api/auth/verify-reset-token` | 驗證重設 token |
 
-#### 找隊員模式
-- 瀏覽所有公開的隊員招募
-- 建立、編輯、刪除自己的隊員招募
-- 查看隊員資訊（目前人數、需要人數）
-- **我要報名**：報名加入他人的隊伍
-- **查看報名者**：建立者可以查看應徵者清單和聯絡資訊
+### 隊伍對戰 API
 
-#### 個人資訊
-- 顯示使用者資訊
-- 編輯個人資訊
-- 刪除帳號
+| 方法 | 端點 | 說明 |
+|------|------|------|
+| GET | `/api/team-matches` | 獲取所有對戰（支援篩選） |
+| GET | `/api/team-matches/:id` | 獲取單一對戰 |
+| POST | `/api/team-matches` | 建立對戰 |
+| PUT | `/api/team-matches/:id` | 更新對戰 |
+| DELETE | `/api/team-matches/:id` | 刪除對戰 |
+| POST | `/api/team-matches/:id/register` | 報名對戰 |
+| GET | `/api/team-matches/:id/registrations` | 獲取報名者清單 |
+| PUT | `/api/team-matches/:id/registrations/:regId` | 更新報名狀態 |
 
-#### 篩選與搜尋
-- 對戰類別（籃球、足球、羽球、桌球、網球、排球、其他）
-- 地區（北部、中部、南部）
-- 時間（週一到週日）
-- 關鍵字搜尋
+### 隊員招募 API
 
-## API 端點
+| 方法 | 端點 | 說明 |
+|------|------|------|
+| GET | `/api/player-recruitments` | 獲取所有招募（支援篩選） |
+| GET | `/api/player-recruitments/:id` | 獲取單一招募 |
+| POST | `/api/player-recruitments` | 建立招募 |
+| PUT | `/api/player-recruitments/:id` | 更新招募 |
+| DELETE | `/api/player-recruitments/:id` | 刪除招募 |
+| POST | `/api/player-recruitments/:id/apply` | 報名招募 |
+| GET | `/api/player-recruitments/:id/applications` | 獲取報名者清單 |
+| PUT | `/api/player-recruitments/:id/applications/:appId` | 更新報名狀態 |
 
-### 認證
-- `POST /api/auth/register` - 註冊新用戶
-  - Body: `{ username, email, password, phone? }`
-- `POST /api/auth/login` - 登入
-  - Body: `{ username, password }`
-- `POST /api/auth/forgot-password` - 忘記密碼（發送重設連結）
-  - Body: `{ email }`
-- `POST /api/auth/reset-password` - 重設密碼
-  - Body: `{ token, newPassword }`
-- `GET /api/auth/verify-reset-token?token=xxx` - 驗證重設 token 是否有效
-
-### 用戶
-- `GET /api/users` - 獲取所有用戶
-- `GET /api/users/:id` - 獲取單個用戶
-- `POST /api/users` - 創建用戶
-- `PUT /api/users/:id` - 更新用戶
-- `DELETE /api/users/:id` - 刪除用戶
-
-### 隊伍對戰
-- `GET /api/team-matches` - 獲取所有對戰（支援篩選和搜尋）
-- `GET /api/team-matches/:id` - 獲取單個對戰
-- `POST /api/team-matches` - 創建對戰
-- `PUT /api/team-matches/:id` - 更新對戰
-- `DELETE /api/team-matches/:id` - 刪除對戰
-
-### 隊員招募
-- `GET /api/player-recruitments` - 獲取所有招募（支援篩選和搜尋）
-- `GET /api/player-recruitments/:id` - 獲取單個招募
-- `POST /api/player-recruitments` - 創建招募
-- `PUT /api/player-recruitments/:id` - 更新招募
-- `DELETE /api/player-recruitments/:id` - 刪除招募
-
-## 部署到 Vercel
-
-### 環境變數設定
-
-在 Vercel 專案設定中添加以下環境變數：
-
-```
-SUPABASE_URL=你的Supabase專案URL
-SUPABASE_KEY=你的Supabase匿名金鑰
-RESEND_API_KEY=你的Resend API金鑰（可選，用於發送密碼重設郵件）
-FRONTEND_URL=https://你的域名.vercel.app（可選，用於郵件中的重設連結）
-```
-
-**VITE_API_URL 說明**：
-- 如果前後端都在同一個 Vercel 專案中，**不需要設定** `VITE_API_URL`（會自動使用相對路徑 `/api`）
-- 如果後端部署在不同的域名，則需要設定：`VITE_API_URL=https://你的API域名/api`
-
-**郵件發送設定**（可選）：
-- 如果要啟用忘記密碼郵件發送功能，需要設定 `RESEND_API_KEY`
-- 前往 [resend.com](https://resend.com) 註冊並取得 API Key
-- 免費方案每天可發送 100 封郵件
-- 如果未設定，系統會使用開發模式（直接顯示重設連結）
-
-詳見 [DEPLOY.md](./DEPLOY.md)
+---
 
 ## 專案結構
 
 ```
 match-point/
-├── api/                    # Vercel 部署用的後端（部署時使用）
-│   └── backend/
-│       ├── routes/         # API 路由
-│       └── supabase.ts     # Supabase 客戶端
-├── backend/                # 本地開發用的後端
+├── api/                        # Vercel Serverless Functions
+│   ├── backend/
+│   │   ├── routes/             # API 路由
+│   │   │   ├── authRoutes.ts   # 認證相關
+│   │   │   ├── teamMatchRoutes.ts
+│   │   │   ├── playerRecruitmentRoutes.ts
+│   │   │   └── userRoutes.ts
+│   │   └── supabase.ts         # Supabase 客戶端
+│   └── index.ts                # API 入口
+├── backend/                    # 本地開發用後端
 │   └── src/
-│       ├── routes/         # API 路由
-│       └── supabase.ts     # Supabase 客戶端
-├── src/                    # 前端原始碼
-│   ├── components/         # React 組件
-│   ├── pages/              # 頁面組件
-│   ├── services/           # API 服務
-│   ├── store/              # Zustand 狀態管理
-│   └── types/              # TypeScript 類型定義
-└── package.json            # 前端依賴
+│       ├── routes/
+│       └── supabase.ts
+├── src/                        # 前端原始碼
+│   ├── components/             # 可重用組件
+│   │   ├── JoinMatchModal.tsx
+│   │   ├── ApplyRecruitmentModal.tsx
+│   │   ├── RegistrationList.tsx
+│   │   └── ...
+│   ├── pages/                  # 頁面組件
+│   │   ├── Home.tsx
+│   │   ├── Login.tsx
+│   │   └── ResetPassword.tsx
+│   ├── services/               # API 服務
+│   │   └── api.ts
+│   ├── store/                  # Zustand 狀態管理
+│   │   ├── authStore.ts
+│   │   ├── teamMatchStore.ts
+│   │   └── playerRecruitmentStore.ts
+│   └── types/                  # TypeScript 型別
+│       └── index.ts
+├── vercel.json                 # Vercel 設定
+├── package.json
+└── README.md
 ```
 
-## 開發狀態
+---
 
-- ✅ 前端 UI 完成
-- ✅ 後端 API 完成
-- ✅ Supabase 整合完成
-- ✅ 使用者認證（註冊/登入）完成
-- ✅ CRUD 功能完成
-- ✅ 前端 CRUD UI 整合完成
+## 授權
 
-## 相關文件
+MIT License
 
-- [部署指南](./DEPLOY.md)
-- [環境變數設定](./ENV_SETUP.md)
+---
+
+## 聯絡
+
+如有問題或建議，歡迎提交 Issue 或 Pull Request！
