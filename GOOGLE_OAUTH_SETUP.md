@@ -20,8 +20,12 @@
    - 選擇 "Web application"
    - **重要**：設定授權的重定向 URI：
      - **只需要添加 Supabase 回調 URL**：`https://你的專案.supabase.co/auth/v1/callback`
-     - **不要添加**應用程式的 URL（如 `https://matchup-platform.vercel.app/login`）
-     - Supabase 會處理從 Google 到應用程式的重定向
+       - 例如：`https://aodjpvdqicysbayfxktr.supabase.co/auth/v1/callback`
+     - **不要添加**以下 URL（這些會導致錯誤）：
+       - ❌ `http://localhost:3000/api/auth/callback/google`（本地後端回調，不需要）
+       - ❌ `https://matchup-platform.vercel.app/login`（應用程式 URL，不需要）
+       - ❌ `http://localhost:5173/login`（本地前端 URL，不需要）
+     - **原因**：Supabase 會處理從 Google 到應用程式的重定向，Google Cloud Console 只需要知道 Supabase 的回調 URL
    - 複製 **Client ID** 和 **Client Secret**
 
 ## 步驟 2: 在 Supabase Dashboard 設定 Google OAuth

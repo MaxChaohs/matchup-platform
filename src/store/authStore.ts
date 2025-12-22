@@ -76,20 +76,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ error: null });
     try {
       // 使用 Supabase 進行 Google OAuth 登入
-      // redirectTo 必須是完整的 URL，且必須在 Supabase Dashboard 的 Redirect URLs 中設定
-      // 重要：這個 URL 必須與 Supabase Dashboard → Authentication → URL Configuration → Redirect URLs 中設定的完全一致
       const redirectTo = `${window.location.origin}/login`;
       
       console.log('開始 Google OAuth');
-      console.log('當前 URL:', window.location.href);
+      console.log('當前 origin:', window.location.origin);
       console.log('redirectTo:', redirectTo);
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectTo,
-          skipBrowserRedirect: false, // 確保 Supabase 處理重定向
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 
@@ -98,13 +98,13 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw error;
       }
       
+      console.log('OAuth URL:', data?.url);
+      
       // signInWithOAuth 會自動重定向到 Google 登入頁面
-      // 登入成功後會重定向回 redirectTo URL
-      // 實際的用戶資料同步會在 App.tsx 的認證狀態監聽中處理
       return true;
     } catch (err: any) {
       console.error('Google 登入失敗:', err);
-      set({ error: err.message || 'Google 登入失敗。請確認 Supabase Dashboard 中的 Redirect URLs 設定正確。' });
+      set({ error: err.message || 'Google 登入失敗' });
       return false;
     }
   },

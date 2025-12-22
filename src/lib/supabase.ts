@@ -11,7 +11,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true, // 自動檢測 URL 中的 session
+    detectSessionInUrl: true,
+    flowType: 'pkce', // 使用 PKCE flow，更安全且避免 state 問題
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
 });
 
