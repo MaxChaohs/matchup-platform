@@ -250,11 +250,19 @@ CREATE TABLE IF NOT EXISTS player_recruitments (
 ```
 SUPABASE_URL=你的Supabase專案URL
 SUPABASE_KEY=你的Supabase匿名金鑰
+RESEND_API_KEY=你的Resend API金鑰（可選，用於發送密碼重設郵件）
+FRONTEND_URL=https://你的域名.vercel.app（可選，用於郵件中的重設連結）
 ```
 
 **VITE_API_URL 說明**：
 - 如果前後端都在同一個 Vercel 專案中，**不需要設定** `VITE_API_URL`（會自動使用相對路徑 `/api`）
 - 如果後端部署在不同的域名，則需要設定：`VITE_API_URL=https://你的API域名/api`
+
+**郵件發送設定**（可選）：
+- 如果要啟用忘記密碼郵件發送功能，需要設定 `RESEND_API_KEY`
+- 前往 [resend.com](https://resend.com) 註冊並取得 API Key
+- 免費方案每天可發送 100 封郵件
+- 如果未設定，系統會使用開發模式（直接顯示重設連結）
 
 詳見 [DEPLOY.md](./DEPLOY.md)
 
