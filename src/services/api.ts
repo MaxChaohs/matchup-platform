@@ -30,6 +30,10 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+  googleAuthCallback: (data: any) => request<any>('/auth/google/callback', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   // User APIs
   getUsers: () => request<any[]>('/users'),
   getUser: (id: string) => request<any>(`/users/${id}`),

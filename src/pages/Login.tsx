@@ -18,7 +18,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(true);
 
   // Store & Router
-  const { login, register, error: authError } = useAuthStore(); // 使用 store 中的 error
+  const { login, register, loginWithGoogle, error: authError } = useAuthStore(); // 使用 store 中的 error
   const navigate = useNavigate();
 
   // Handle Input Change
@@ -47,8 +47,21 @@ export default function Login() {
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    alert(`${provider} 登入功能尚未實裝`);
+  const handleSocialLogin = async (provider: string) => {
+    if (provider === 'Google') {
+      setIsLoading(true);
+      try {
+        const success = await loginWithGoogle();
+        if (success) {
+          // 等待 OAuth 流程完成（會在 authStore 中處理）
+          // 這裡不需要立即導航，因為 OAuth 會重定向
+        }
+      } catch (err: any) {
+        console.error('Google 登入失敗:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   // 切換模式時清空表單
