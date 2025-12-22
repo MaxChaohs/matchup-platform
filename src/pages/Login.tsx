@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { api } from '../services/api';
 
 export default function Login() {
   // UI State
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   
   // Form Data
   const [formData, setFormData] = useState({
@@ -16,6 +18,13 @@ export default function Login() {
     phone: ''
   });
   const [rememberMe, setRememberMe] = useState(true);
+
+  // Forgot Password State
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [resetToken, setResetToken] = useState(''); // 開發模式用
 
   // Store & Router
   const { login, register, error: authError } = useAuthStore();
@@ -43,6 +52,35 @@ export default function Login() {
     if (success) {
       navigate('/');
     }
+  };
+
+  // Handle Forgot Password
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotLoading(true);
+
+    try {
+      const result = await api.forgotPassword(forgotEmail);
+      setForgotSuccess(true);
+      // 開發模式：顯示 reset token
+      if (result.dev_token) {
+        setResetToken(result.dev_token);
+      }
+    } catch (err: any) {
+      setForgotError(err.message || '發送失敗');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  // 關閉忘記密碼 Modal
+  const closeForgotPassword = () => {
+    setShowForgotPassword(false);
+    setForgotEmail('');
+    setForgotSuccess(false);
+    setForgotError('');
+    setResetToken('');
   };
 
   // 切換模式時清空表單
@@ -190,9 +228,13 @@ export default function Login() {
                   />
                   <span className="ml-2 text-gray-300">Remember me</span>
                 </label>
-                <a href="#" className="text-green-400 hover:text-green-300 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-green-400 hover:text-green-300 text-sm"
+                >
                   Forgot Password?
-                </a>
+                </button>
               </div>
             )}
 
@@ -227,6 +269,107 @@ export default function Login() {
           
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-700 rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-white">忘記密碼</h3>
+              <button
+                onClick={closeForgotPassword}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {!forgotSuccess ? (
+              <form onSubmit={handleForgotPassword}>
+                <p className="text-gray-400 mb-4">
+                  請輸入您註冊時使用的電子郵件，我們將發送密碼重設連結給您。
+                </p>
+
+                <div className="relative mb-4">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="Email Address"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
+
+                {forgotError && (
+                  <div className="mb-4 p-3 rounded-lg bg-red-900/50 border border-red-800 text-red-200 text-sm">
+                    {forgotError}
+                  </div>
+                )}
+
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={closeForgotPassword}
+                    className="flex-1 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="flex-1 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+                  >
+                    {forgotLoading ? '發送中...' : '發送連結'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div>
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-white font-medium mb-2">已發送重設連結！</p>
+                  <p className="text-gray-400 text-sm">
+                    如果此電子郵件已註冊，您將收到密碼重設連結。
+                  </p>
+                </div>
+
+                {/* 開發模式：顯示 reset token */}
+                {resetToken && (
+                  <div className="mb-4 p-3 rounded-lg bg-yellow-900/50 border border-yellow-800 text-yellow-200 text-sm">
+                    <p className="font-semibold mb-1">⚠️ 開發模式</p>
+                    <p className="mb-2">正式環境中，重設連結會透過電子郵件發送。</p>
+                    <a
+                      href={`/reset-password?token=${resetToken}`}
+                      className="text-green-400 hover:text-green-300 underline break-all"
+                    >
+                      點此重設密碼
+                    </a>
+                  </div>
+                )}
+
+                <button
+                  onClick={closeForgotPassword}
+                  className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  確定
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -92,6 +92,8 @@ npm run dev
   - `phone` (String, Optional)
   - `avatar` (String, Optional)
   - `password` (String, Hashed)
+  - `reset_token` (String, Optional) - 密碼重設 token
+  - `reset_token_expires` (Timestamp, Optional) - token 過期時間
   - `created_at`, `updated_at` (Timestamps)
 
 - **team_matches**: 隊伍對戰
@@ -125,9 +127,15 @@ CREATE TABLE IF NOT EXISTS users (
   phone TEXT,
   avatar TEXT,
   password TEXT,
+  reset_token TEXT,
+  reset_token_expires TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 如果已有 users 表，添加新欄位：
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
 
 -- 建立 team_matches 表
 CREATE TABLE IF NOT EXISTS team_matches (
@@ -172,6 +180,7 @@ CREATE TABLE IF NOT EXISTS player_recruitments (
 ### 登入/註冊頁面
 - 使用者註冊（用戶名、電子郵件、密碼、手機號碼）
 - 使用者登入（用戶名、密碼）
+- 忘記密碼功能（透過電子郵件重設）
 - 密碼加密儲存（bcryptjs）
 - 表單驗證與錯誤提示
 
@@ -205,6 +214,11 @@ CREATE TABLE IF NOT EXISTS player_recruitments (
   - Body: `{ username, email, password, phone? }`
 - `POST /api/auth/login` - 登入
   - Body: `{ username, password }`
+- `POST /api/auth/forgot-password` - 忘記密碼（發送重設連結）
+  - Body: `{ email }`
+- `POST /api/auth/reset-password` - 重設密碼
+  - Body: `{ token, newPassword }`
+- `GET /api/auth/verify-reset-token?token=xxx` - 驗證重設 token 是否有效
 
 ### 用戶
 - `GET /api/users` - 獲取所有用戶
