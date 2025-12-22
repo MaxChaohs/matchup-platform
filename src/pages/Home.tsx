@@ -21,7 +21,8 @@ export default function Home() {
   
   // 隊伍對戰相關
   const teamMatchStore = useTeamMatchStore();
-  const teamMatches = teamMatchStore.getFilteredTeamMatches();
+  const teamMatches = teamMatchStore.getFilteredTeamMatches(); // 搜尋結果（受篩選影響）
+  const allTeamMatches = teamMatchStore.getAllTeamMatches(); // 所有對戰（用於「我建立的對戰」）
   
   // 檢查是否為建立者的輔助函數
   const isCreator = (item: TeamMatch | PlayerRecruitment) => {
@@ -33,12 +34,15 @@ export default function Home() {
     return creatorId === userId;
   };
   
-  const userTeamMatches = teamMatches.filter(match => isCreator(match));
+  // 「我建立的對戰」從所有對戰中篩選，不受搜尋條件影響
+  const userTeamMatches = allTeamMatches.filter(match => isCreator(match));
   
   // 尋找隊員相關
   const playerRecruitmentStore = usePlayerRecruitmentStore();
-  const recruitments = playerRecruitmentStore.getFilteredRecruitments();
-  const userRecruitments = recruitments.filter(rec => isCreator(rec));
+  const recruitments = playerRecruitmentStore.getFilteredRecruitments(); // 搜尋結果
+  const allRecruitments = playerRecruitmentStore.getAllRecruitments(); // 所有招募
+  // 「我建立的招募」從所有招募中篩選，不受搜尋條件影響
+  const userRecruitments = allRecruitments.filter(rec => isCreator(rec));
 
   const categories: MatchCategory[] = ['籃球', '足球', '羽球', '桌球', '網球', '排球', '其他'];
   const regions: Region[] = ['北部', '中部', '南部'];
@@ -84,8 +88,12 @@ export default function Home() {
 
   // 獲取數據
   useEffect(() => {
+    // 獲取篩選後的數據（用於搜尋結果）
     teamMatchStore.fetchTeamMatches();
     playerRecruitmentStore.fetchRecruitments();
+    // 獲取所有數據（用於「我建立的」區塊，不受篩選影響）
+    teamMatchStore.fetchAllTeamMatches();
+    playerRecruitmentStore.fetchAllRecruitments();
   }, []);
 
   // 當篩選或搜尋改變時重新獲取數據
@@ -123,6 +131,7 @@ export default function Home() {
       }
       await api.deleteTeamMatch(matchId);
       teamMatchStore.fetchTeamMatches();
+      teamMatchStore.fetchAllTeamMatches(); // 刷新「我建立的對戰」
     } catch (error: any) {
       alert(error.message || '刪除失敗');
     }
@@ -140,6 +149,7 @@ export default function Home() {
       }
       await api.deletePlayerRecruitment(recruitmentId);
       playerRecruitmentStore.fetchRecruitments();
+      playerRecruitmentStore.fetchAllRecruitments(); // 刷新「我建立的招募」
     } catch (error: any) {
       alert(error.message || '刪除失敗');
     }
@@ -867,6 +877,7 @@ export default function Home() {
           onClose={() => setShowCreateTeamMatch(false)}
           onSuccess={() => {
             teamMatchStore.fetchTeamMatches();
+            teamMatchStore.fetchAllTeamMatches();
             setShowCreateTeamMatch(false);
           }}
         />
@@ -878,6 +889,7 @@ export default function Home() {
           onClose={() => setShowCreateRecruitment(false)}
           onSuccess={() => {
             playerRecruitmentStore.fetchRecruitments();
+            playerRecruitmentStore.fetchAllRecruitments();
             setShowCreateRecruitment(false);
           }}
         />
@@ -889,6 +901,7 @@ export default function Home() {
           onClose={() => setEditingMatch(null)}
           onSuccess={() => {
             teamMatchStore.fetchTeamMatches();
+            teamMatchStore.fetchAllTeamMatches();
             setEditingMatch(null);
           }}
         />
@@ -900,6 +913,7 @@ export default function Home() {
           onClose={() => setEditingRecruitment(null)}
           onSuccess={() => {
             playerRecruitmentStore.fetchRecruitments();
+            playerRecruitmentStore.fetchAllRecruitments();
             setEditingRecruitment(null);
           }}
         />
