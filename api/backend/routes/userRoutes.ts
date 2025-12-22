@@ -1,115 +1,115 @@
+// api/backend/routes/userRoutes.ts
 import express from 'express';
-import mongoose from 'mongoose';
-import User from '../models/User.js';
+import { supabase } from '../supabase.js';
 
 const router = express.Router();
 
-// 獲取所有用戶（公開）
+// Helper to map Supabase 'id' to '_id' for frontend compatibility
+const formatUser = (user: any) => {
+  if (!user) return null;
+  return { ...user, _id: user.id };
+};
+
+// Get all users
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find().select('-__v').sort({ createdAt: -1 });
-    res.json(users);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data.map(formatUser));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 獲取單個用戶
+// Get single user
 router.get('/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-__v');
-    if (!user) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error || !data) {
       return res.status(404).json({ error: '用戶不存在' });
     }
-    res.json(user);
+    res.json(formatUser(data));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 創建用戶（如果不存在則創建，存在則返回）
+// Create user
 router.post('/', async (req, res) => {
   try {
-    // 檢查 MongoDB 連接狀態
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
-    }
-
     const { username, email, phone, avatar } = req.body;
     
-    // 檢查是否已存在
-    const existingUser = await User.findOne({ 
-      $or: [{ email }, { username }] 
-    });
+    // Check for existing user (optional, Supabase unique constraints will also catch this)
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .or(`email.eq.${email},username.eq.${username}`)
+      .maybeSingle();
     
-    if (existingUser) {
-      return res.status(200).json(existingUser); // 返回現有用戶
+    if (existing) {
+      return res.status(400).json({ error: '用戶名或電子郵件已存在' });
     }
 
-    const user = new User({ username, email, phone, avatar });
-    await user.save();
-    res.status(201).json(user);
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{ username, email, phone, avatar }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(201).json(formatUser(data));
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
 });
 
-// 更新用戶資訊
+// Update user
 router.put('/:id', async (req, res) => {
   try {
-    // 檢查 MongoDB 連接狀態
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ error: '資料庫連接不可用，請稍後再試' });
-    }
-
     const { username, email, phone, avatar } = req.body;
+    const updates: any = { updated_at: new Date().toISOString() };
     
-    // 驗證 ID 格式（MongoDB ObjectId）
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: '無效的用戶 ID 格式' });
-    }
-    
-    // 檢查用戶是否存在
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: '用戶不存在' });
-    }
+    if (username) updates.username = username;
+    if (email) updates.email = email;
+    if (phone !== undefined) updates.phone = phone;
+    if (avatar !== undefined) updates.avatar = avatar;
 
-    // 檢查email和username是否被其他用戶使用
-    if (email && email !== user.email) {
-      const emailExists = await User.findOne({ email, _id: { $ne: req.params.id } });
-      if (emailExists) {
-        return res.status(400).json({ error: '電子郵件已被使用' });
-      }
-    }
-    
-    if (username && username !== user.username) {
-      const usernameExists = await User.findOne({ username, _id: { $ne: req.params.id } });
-      if (usernameExists) {
-        return res.status(400).json({ error: '用戶名已被使用' });
-      }
-    }
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', req.params.id)
+      .select()
+      .single();
 
-    // 更新用戶
-    if (username) user.username = username;
-    if (email) user.email = email;
-    if (phone !== undefined) user.phone = phone;
-    if (avatar !== undefined) user.avatar = avatar;
-
-    await user.save();
-    res.json(user);
+    if (error) throw error;
+    res.json(formatUser(data));
   } catch (error: any) {
+    // Handle unique constraint violations
+    if (error.code === '23505') {
+       return res.status(400).json({ error: '用戶名或電子郵件已被使用' });
+    }
     res.status(400).json({ error: error.message });
   }
 });
 
-// 刪除用戶
+// Delete user
 router.delete('/:id', async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: '用戶不存在' });
-    }
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) throw error;
     res.json({ message: '用戶已刪除' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -117,4 +117,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 export default router;
-
