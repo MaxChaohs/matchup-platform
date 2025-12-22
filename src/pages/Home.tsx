@@ -97,13 +97,17 @@ export default function Home() {
   }, []);
 
   // 當篩選或搜尋改變時重新獲取數據
+  // 使用 JSON.stringify 來確保能正確偵測 filters 物件的變化
+  const teamFiltersStr = JSON.stringify(teamMatchStore.filters);
+  const playerFiltersStr = JSON.stringify(playerRecruitmentStore.filters);
+  
   useEffect(() => {
     teamMatchStore.fetchTeamMatches();
-  }, [teamMatchStore.filters.category, teamMatchStore.filters.region, teamMatchStore.filters.dayOfWeek, teamMatchStore.searchQuery]);
+  }, [teamFiltersStr, teamMatchStore.searchQuery]);
 
   useEffect(() => {
     playerRecruitmentStore.fetchRecruitments();
-  }, [playerRecruitmentStore.filters.category, playerRecruitmentStore.filters.region, playerRecruitmentStore.filters.dayOfWeek, playerRecruitmentStore.searchQuery]);
+  }, [playerFiltersStr, playerRecruitmentStore.searchQuery]);
 
   // 處理刪除用戶
   const handleDeleteUser = async () => {
