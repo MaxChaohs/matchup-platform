@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         provider: 'google',
         options: {
           skipBrowserRedirect: true,
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/login`,
         },
       });
 
