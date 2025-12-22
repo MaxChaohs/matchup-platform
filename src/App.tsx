@@ -14,112 +14,75 @@ function AuthListener() {
   const { syncGoogleUser } = useAuthStore();
 
   useEffect(() => {
-    // 處理 OAuth 回調 - 檢查 URL 參數和 hash 中的認證資訊
+    // 處理 OAuth 回調
     const handleAuthCallback = async () => {
-      // 檢查 URL 查詢參數中的錯誤（Supabase 回調錯誤）
       const urlParams = new URLSearchParams(window.location.search);
       const queryError = urlParams.get('error');
       const queryErrorDescription = urlParams.get('error_description');
       
+      // 處理錯誤
       if (queryError) {
-        console.error('OAuth 查詢參數錯誤:', queryError, queryErrorDescription);
-        console.error('當前 URL:', window.location.href);
-        console.error('請確認 Supabase Dashboard → Authentication → URL Configuration → Redirect URLs 中包含:', window.location.origin + '/login');
-        
+        console.error('OAuth 錯誤:', queryError, queryErrorDescription);
         let errorMessage = queryErrorDescription || queryError || 'Google 登入失敗';
-        
-        // 如果是 state parameter missing 錯誤，提供更明確的提示
-        if (queryError === 'invalid_request' && queryErrorDescription?.includes('state parameter')) {
-          errorMessage = 'OAuth 設定錯誤：請在 Supabase Dashboard → Authentication → URL Configuration → Redirect URLs 中添加：' + window.location.origin + '/login';
+        if (queryErrorDescription?.includes('state parameter')) {
+          errorMessage = 'Google 登入失敗：請清除瀏覽器快取後重試';
         }
-        
         useAuthStore.setState({ error: errorMessage });
-        // 清除 URL 參數
-        window.history.replaceState({}, document.title, window.location.pathname);
+        window.history.replaceState({}, document.title, '/login');
         return;
       }
 
-      // 檢查 URL hash 中的認證資訊
-      if (window.location.hash) {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const error = hashParams.get('error');
-        const errorDescription = hashParams.get('error_description');
+      // 檢查 hash 中的 access_token（implicit flow）
+      if (window.location.hash?.includes('access_token')) {
+        console.log('檢測到 OAuth access_token');
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        if (error) {
-          console.error('OAuth hash 錯誤:', error, errorDescription);
-          useAuthStore.setState({ error: errorDescription || error || 'Google 登入失敗' });
-          // 清除 URL hash
-          window.history.replaceState({}, document.title, window.location.pathname);
-          return;
+        const { data: { session } } = await supabase.auth.getSession();
+        window.history.replaceState({}, document.title, '/');
+        
+        if (session?.user) {
+          console.log('OAuth 成功:', session.user.email);
+          await syncGoogleUser(session.user);
         }
+        return;
+      }
 
-        if (accessToken) {
-          // 如果有 access_token，表示是 OAuth 回調
-          // 清除 URL hash
-          window.history.replaceState({}, document.title, window.location.pathname);
-          
-          // 等待一下讓 Supabase 處理 session
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // 獲取 session
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          
-          if (sessionError) {
-            console.error('獲取 session 失敗:', sessionError);
-            useAuthStore.setState({ error: '無法獲取認證資訊' });
-            return;
-          }
-
-          if (session?.user) {
-            await syncGoogleUser(session.user);
-            // 導航到首頁
-            if (window.location.pathname === '/login') {
-              window.location.href = '/';
-            }
-          } else {
-            console.error('Session 中沒有用戶資訊');
-            useAuthStore.setState({ error: '無法獲取用戶資訊' });
-          }
+      // 檢查 code（PKCE flow）
+      const code = urlParams.get('code');
+      if (code) {
+        console.log('檢測到 OAuth code');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        window.history.replaceState({}, document.title, '/');
+        
+        if (session?.user) {
+          console.log('OAuth 成功:', session.user.email);
+          await syncGoogleUser(session.user);
         }
       }
     };
 
-    // 初始檢查和處理回調
     handleAuthCallback();
 
-    // 檢查是否有現有的 session（非 OAuth 回調情況）
-    if (!window.location.hash.includes('access_token')) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          syncGoogleUser(session.user);
-        }
-      });
-    }
+    // 檢查現有 session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        syncGoogleUser(session.user);
+      }
+    });
 
     // 監聽認證狀態變化
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-      
       if (event === 'SIGNED_IN' && session?.user) {
-        // 避免重複同步（如果已經在 handleAuthCallback 中處理過）
-        if (!window.location.hash.includes('access_token')) {
-          await syncGoogleUser(session.user);
-        }
-        // 使用 window.location 來導航，避免 hook 順序問題
-        if (window.location.pathname === '/login') {
-          window.location.href = '/';
-        }
+        await syncGoogleUser(session.user);
       } else if (event === 'SIGNED_OUT') {
         useAuthStore.getState().logout();
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [syncGoogleUser]);
 
   return null;

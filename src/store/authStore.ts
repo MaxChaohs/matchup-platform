@@ -75,21 +75,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   loginWithGoogle: async () => {
     set({ error: null });
     try {
-      // 使用 Supabase 進行 Google OAuth 登入
-      const redirectTo = `${window.location.origin}/login`;
-      
       console.log('開始 Google OAuth');
-      console.log('當前 origin:', window.location.origin);
-      console.log('redirectTo:', redirectTo);
       
+      // 使用 skipBrowserRedirect 來手動控制重定向
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          skipBrowserRedirect: true,
+          redirectTo: window.location.origin,
         },
       });
 
@@ -98,9 +91,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw error;
       }
       
-      console.log('OAuth URL:', data?.url);
+      if (data?.url) {
+        console.log('OAuth URL:', data.url);
+        // 手動重定向到 OAuth URL
+        window.location.href = data.url;
+      }
       
-      // signInWithOAuth 會自動重定向到 Google 登入頁面
       return true;
     } catch (err: any) {
       console.error('Google 登入失敗:', err);
