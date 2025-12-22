@@ -10,17 +10,18 @@
 
 1. 前往 [Google Cloud Console](https://console.cloud.google.com/)
 2. 建立新專案或選擇現有專案
-3. 啟用 Google+ API：
+3. 啟用必要的 API：
    - 進入 "APIs & Services" → "Library"
-   - 搜尋 "Google+ API" 並啟用
+   - 搜尋並啟用 "Google+ API"（如果可用）
+   - 或者啟用 "Google Identity Services API"
 4. 建立 OAuth 2.0 憑證：
    - 進入 "APIs & Services" → "Credentials"
    - 點擊 "Create Credentials" → "OAuth client ID"
    - 選擇 "Web application"
-   - 設定授權的重定向 URI：
-     - 開發環境：`http://localhost:5173/login`（或你的前端端口）
-     - 生產環境：`https://你的域名.vercel.app/login`
-     - Supabase 回調：`https://你的專案.supabase.co/auth/v1/callback`
+   - **重要**：設定授權的重定向 URI：
+     - **只需要添加 Supabase 回調 URL**：`https://你的專案.supabase.co/auth/v1/callback`
+     - **不要添加**應用程式的 URL（如 `https://matchup-platform.vercel.app/login`）
+     - Supabase 會處理從 Google 到應用程式的重定向
    - 複製 **Client ID** 和 **Client Secret**
 
 ## 步驟 2: 在 Supabase Dashboard 設定 Google OAuth
